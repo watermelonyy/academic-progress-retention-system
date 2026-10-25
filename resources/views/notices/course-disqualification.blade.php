@@ -532,6 +532,30 @@
 
             font-weight: bold;
 
+            position: relative;
+
+        }
+
+        .checkbox.checked::after {
+
+            content: '';
+
+            position: absolute;
+
+            width: 4px;
+
+            height: 8px;
+
+            border-right: 2px solid #000;
+
+            border-bottom: 2px solid #000;
+
+            transform: rotate(45deg);
+
+            left: 3px;
+
+            top: 0px;
+
         }
 
 
@@ -784,13 +808,7 @@
 
                 <td class="checkbox-cell">
 
-                    <span class="checkbox">
-
-                        @if($isThreeStrike)
-                            ✓
-                        @endif
-
-                    </span>
+                    <span class="checkbox @if($isThreeStrike) checked @endif"></span>
 
                 </td>
 
@@ -818,13 +836,7 @@
 
                 <td class="checkbox-cell">
 
-                    <span class="checkbox">
-
-                        @if($isPermanentDebarment)
-                            ✓
-                        @endif
-
-                    </span>
+                    <span class="checkbox @if($isPermanentDebarment) checked @endif"></span>
 
                 </td>
 
@@ -852,13 +864,7 @@
 
                 <td class="checkbox-cell">
 
-                    <span class="checkbox">
-
-                        @if($isMaximumResidency)
-                            ✓
-                        @endif
-
-                    </span>
+                    <span class="checkbox @if($isMaximumResidency) checked @endif"></span>
 
                 </td>
 
@@ -940,6 +946,8 @@
              ====================================================== -->
 
         <div class="signature">
+            <p>
+            </p>
 
             <div class="signature-name">
 

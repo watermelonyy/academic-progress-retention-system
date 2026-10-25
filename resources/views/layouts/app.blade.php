@@ -14,41 +14,151 @@
     <style>
         body {
             margin: 0;
-            background: #f4f6f9;
+            background: #a1a4a7;
+            color: #212529;
         }
 
+        /* SIDEBAR */
         .sidebar {
             width: 260px;
             height: 100vh;
             position: fixed;
-            background: #1e2a38;
-            color: white;
+            top: 0;
+            left: 0;
+            background: #ffffff;
+            color: #212529;
+            border-right: 1px solid #eeeeee;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
+        /* SYSTEM TITLE */
         .sidebar h3 {
-            padding: 25px;
-            font-weight: bold;
+            padding: 20px 12px;
+            margin: 0 0 22px;
+            font-size: 23px;
+            font-weight: 700;
+            color: #111111;
+            text-align: center;
+            letter-spacing: 0.3px;
         }
 
+        /* SIDEBAR LINKS */
         .sidebar a {
-            display: block;
-            color: white;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            color: #212529;
+            background: transparent;
             text-decoration: none;
-            padding: 15px 25px;
-            transition: 0.3s;
+            padding: 13px 18px;
+            margin-bottom: 8px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 500;
+            transition:
+                background-color 0.25s ease,
+                color 0.25s ease,
+                transform 0.2s ease;
         }
 
+        /* ICONS */
+        .sidebar a i,
+        .sidebar form button i {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+            transition: color 0.25s ease;
+        }
+
+        /* HOVER EFFECT */
         .sidebar a:hover {
             background: #0e8203;
+            color: #ffffff;
+            transform: translateX(3px);
         }
 
-        .sidebar .active {
-            background: #14ad06;
+        .sidebar a:hover i {
+            color: #ffffff;
         }
 
+        /* ACTIVE PAGE */
+        .sidebar a.active {
+            background: #0e8203;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .sidebar a.active i {
+            color: #ffffff;
+        }
+
+        /* LOGOUT FORM */
+        .sidebar form {
+            margin-top: 18px;
+        }
+
+        .sidebar form button {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            background: transparent;
+            border: none;
+            color: #212529;
+            width: 100%;
+            text-align: left;
+            padding: 13px 18px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition:
+                background-color 0.25s ease,
+                color 0.25s ease,
+                transform 0.2s ease;
+        }
+
+        /* LOGOUT HOVER */
+        .sidebar form button:hover {
+            background: #0e8203;
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+
+        .sidebar form button:hover i {
+            color: #ffffff;
+        }
+
+        /* PAGE CONTENT */
         .content {
             margin-left: 260px;
             padding: 30px;
+            min-height: 100vh;
+            background: #8f969d;
+        }
+
+        /* KEEP SIDEBAR USABLE ON SMALL SCREENS */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 220px;
+                padding: 10px;
+            }
+
+            .sidebar h3 {
+                font-size: 20px;
+            }
+
+            .sidebar a,
+            .sidebar form button {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+
+            .content {
+                margin-left: 220px;
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -94,16 +204,7 @@
     <form action="{{ route('logout') }}" method="POST">
         @csrf
 
-        <button type="submit"
-                style="
-                    background:none;
-                    border:none;
-                    color:white;
-                    width:100%;
-                    text-align:left;
-                    padding:15px 25px;
-                    cursor:pointer;
-                ">
+        <button type="submit">
 
             <i class="fa fa-right-from-bracket"></i>
             Logout

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class SemesterController extends Controller
 {
@@ -37,8 +36,7 @@ class SemesterController extends Controller
     }
 
     /**
-     * Add a school year and automatically create
-     * its first and second semesters.
+     * Add a school year and automatically create both semesters.
      */
     public function store(Request $request)
     {
@@ -48,6 +46,7 @@ class SemesterController extends Controller
                     'required',
                     'string',
                     'regex:/^\d{4}-\d{4}$/',
+
                     function ($attribute, $value, $fail) {
                         [$start, $end] = array_map(
                             'intval',
@@ -60,7 +59,19 @@ class SemesterController extends Controller
                             );
                         }
                     },
-                    Rule::unique('semesters', 'school_year'),
+
+                    function ($attribute, $value, $fail) {
+                        if (
+                            Semester::where(
+                                'school_year',
+                                $value
+                            )->exists()
+                        ) {
+                            $fail(
+                                'This school year already exists.'
+                            );
+                        }
+                    },
                 ],
             ],
             [
@@ -68,36 +79,33 @@ class SemesterController extends Controller
                     'Please enter a school year.',
 
                 'school_year.string' =>
-                    'The school year must contain numbers only in the format YYYY-YYYY.',
+                    'The school year must be a valid string.',
 
                 'school_year.regex' =>
                     'Use the format YYYY-YYYY, such as 2026-2027.',
-
-                'school_year.unique' =>
-                    'This school year already exists.',
             ]
         );
 
-        DB::transaction(function () use ($validated) {
-            foreach (
-                [
-                    'First Semester',
-                    'Second Semester'
-                ] as $semesterName
-            ) {
-                Semester::create([
-                    'school_year' => $validated['school_year'],
-                    'semester_name' => $semesterName,
-                ]);
-            }
+        $schoolYear = $validated['school_year'];
+
+        DB::transaction(function () use ($schoolYear) {
+            Semester::create([
+                'school_year' => $schoolYear,
+                'semester_name' => '1st Semester',
+            ]);
+
+            Semester::create([
+                'school_year' => $schoolYear,
+                'semester_name' => '2nd Semester',
+            ]);
         });
 
         return redirect()
             ->route('semesters.index')
             ->with(
                 'success',
-                'School year ' . $validated['school_year'] .
-                ' and its two semesters have been added successfully.'
+                'School year ' . $schoolYear .
+                ' and its 1st Semester and 2nd Semester have been added successfully.'
             );
     }
 
@@ -126,6 +134,7 @@ class SemesterController extends Controller
                     'required',
                     'string',
                     'regex:/^\d{4}-\d{4}$/',
+
                     function ($attribute, $value, $fail) {
                         [$start, $end] = array_map(
                             'intval',
@@ -138,6 +147,7 @@ class SemesterController extends Controller
                             );
                         }
                     },
+
                     function ($attribute, $value, $fail) use ($schoolYear) {
                         if (
                             $value !== $schoolYear &&
@@ -158,7 +168,7 @@ class SemesterController extends Controller
                     'Please enter a school year.',
 
                 'school_year.string' =>
-                    'The school year must contain numbers only in the format YYYY-YYYY.',
+                    'The school year must be a valid string.',
 
                 'school_year.regex' =>
                     'Use the format YYYY-YYYY, such as 2026-2027.',

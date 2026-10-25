@@ -441,31 +441,49 @@
 
                         <div class="semester-options">
 
-                            @foreach($semesters as $semester)
+                            
+@foreach(
+    $semesters->sortBy(function ($semester) {
+        $name = strtolower(trim($semester->semester_name ?? ''));
 
-                                <label
-                                    class="semester-option"
-                                    data-school-year="{{ $semester->school_year }}"
-                                >
+        if (
+            str_contains($name, '1st') ||
+            str_contains($name, 'first')
+        ) {
+            return 1;
+        }
 
-                                    <input
-                                        type="radio"
-                                        name="semester_choice"
-                                        value="{{ $semester->semester_id }}"
-                                        class="semester-radio"
-                                        data-school-year="{{ $semester->school_year }}"
-                                        {{ (string) $selectedSemesterId === (string) $semester->semester_id ? 'checked' : '' }}
-                                    >
+        if (
+            str_contains($name, '2nd') ||
+            str_contains($name, 'second')
+        ) {
+            return 2;
+        }
 
-                                    <span class="semester-circle"></span>
+        return 3;
+    })->values() as $semester
+)
+    <label
+        class="semester-option"
+        data-school-year="{{ $semester->school_year }}"
+    >
+        <input
+            type="radio"
+            name="semester_choice"
+            value="{{ $semester->semester_id }}"
+            class="semester-radio"
+            data-school-year="{{ $semester->school_year }}"
+            {{ (string) $selectedSemesterId === (string) $semester->semester_id ? 'checked' : '' }}
+        >
 
-                                    <span class="semester-text">
-                                        {{ $semester->semester_name }}
-                                    </span>
+        <span class="semester-circle"></span>
 
-                                </label>
+        <span class="semester-text">
+            {{ $semester->semester_name }}
+        </span>
+    </label>
+@endforeach
 
-                            @endforeach
 
                         </div>
 

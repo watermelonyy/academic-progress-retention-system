@@ -12,232 +12,149 @@ use Illuminate\Validation\Rule;
  
 class StudentController extends Controller 
 { 
-public function index(Request $request) 
-{ 
-    if (!$request->session()->has('user_id')) { 
-        return redirect('/') 
-            ->with('error', 'Please login first.'); 
-    } 
- 
-    $search = trim($request->search ?? ''); 
- 
-    $students = Student::with([ 
-        'latestStatus', 
-        'statusHistory.semester' 
-    ]) 
-        ->when($search !== '', function ($query) use ($search) { 
- 
-            $query->where(function ($q) use ($search) { 
- 
-                $q->where( 
-                    'first_name', 
-                    'ILIKE', 
-                    "%{$search}%" 
-                ) 
-                ->orWhere( 
-                    'middle_name', 
-                    'ILIKE', 
-                    "%{$search}%" 
-                ) 
-                ->orWhere( 
-                    'last_name', 
-                    'ILIKE', 
-                    "%{$search}%" 
-                ) 
-                ->orWhere( 
-                    'student_no', 
-                    'ILIKE', 
-                    "%{$search}%" 
-                ); 
- 
-            }); 
- 
-        }) 
-        ->orderBy('last_name') 
-        ->orderBy('first_name') 
-        ->get(); 
- 
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | CALCULATE PRIORITY ALERT FROM PERFORMANCE HISTORY 
-    |-------------------------------------------------------------------------- 
-    | 
-    | Priority Alert is NOT based on academic_status. 
-    | 
-    | It is TRUE only when: 
-    | 
-    | 1. The student has a previous evaluation; AND 
-    | 2. The latest failure percentage is equal to or higher than 
-    |    the previous failure percentage. 
-    | 
-    | Lower failure percentage = improvement = NO Priority Alert. 
-    | 
-    */ 
- 
-    $students->each(function ($student) { 
- 
-        $evaluations = $student->statusHistory 
-            ->sortByDesc(function ($history) { 
- 
-                return [ 
-                    (int) $history->semester_id, 
-                    (int) $history->status_id 
-                ]; 
- 
-            }) 
-            ->values(); 
- 
- 
-        $latestEvaluation = 
-            $evaluations->first(); 
- 
- 
-        $previousEvaluation = 
-            $evaluations->skip(1)->first(); 
- 
- 
-        $priorityAlert = false; 
- 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | ONLY COMPARE WHEN A PREVIOUS EVALUATION EXISTS 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        if ( 
-            $latestEvaluation && 
-            $previousEvaluation 
-        ) { 
- 
-            $currentFailure = 
-                (float) $latestEvaluation->failure_percentage; 
- 
-            $previousFailure = 
-                (float) $previousEvaluation->failure_percentage; 
- 
- 
-            /* 
-            |-------------------------------------------------------------------------- 
-            | NO IMPROVEMENT OR WORSE 
-            |-------------------------------------------------------------------------- 
-            | 
-            | Current < Previous 
-            | = Improvement 
-            | = NO ALERT 
-            | 
-            | Current = Previous 
-            | = No improvement 
-            | = ALERT 
-            | 
-            | Current > Previous 
-            | = Worse 
-            | = ALERT 
-            | 
-            */ 
- 
-            if ( 
-                $currentFailure >= 
-                $previousFailure 
-            ) { 
- 
-                $priorityAlert = true; 
- 
-            } 
- 
-        } 
- 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | SET DISPLAY VALUE ONLY 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        if ($student->latestStatus) { 
- 
-            $student->latestStatus->priority_alert = 
-                $priorityAlert; 
 
-            /*
-            | Old records may contain Residency Risk as an academic status.
-            | It is now a warning only, so display those old records as
-            | Regular without changing the database record here.
-            */
-            if (
-                $student->latestStatus->academic_status ===
-                'Residency Risk'
-            ) {
-                $student->latestStatus->academic_status =
-                    'Regular';
+public function index(Request $request)
+{
+    if (!$request->session()->has('user_id')) {
+        return redirect('/')
+            ->with('error', 'Please login first.');
+    }
+
+    $search = trim($request->search ?? '');
+
+    $students = Student::with([
+        'latestStatus',
+        'statusHistory.semester'
+    ])
+        ->when($search !== '', function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'ILIKE', "%{$search}%")
+                    ->orWhere('middle_name', 'ILIKE', "%{$search}%")
+                    ->orWhere('last_name', 'ILIKE', "%{$search}%")
+                    ->orWhere('student_no', 'ILIKE', "%{$search}%");
+            });
+        })
+        ->orderBy('last_name')
+        ->orderBy('first_name')
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULATE PRIORITY ALERT FROM EVALUATION HISTORY
+    |--------------------------------------------------------------------------
+    | Use the latest submitted evaluation, not the largest semester_id.
+    | Compare distinct semester evaluations.
+    |
+    | Equal or increased failure percentage = Priority Alert.
+    | Decreased failure percentage = No Priority Alert.
+    |--------------------------------------------------------------------------
+    */
+
+    $students->each(function ($student) {
+
+        $evaluations = $student->statusHistory
+            ->filter(function ($history) {
+                return $history->semester_id !== null;
+            })
+            ->groupBy('semester_id')
+            ->map(function ($semesterEvaluations) {
+
+                return $semesterEvaluations
+                    ->sort(function ($a, $b) {
+
+                        $dateComparison = strcmp(
+                            (string) $b->created_at,
+                            (string) $a->created_at
+                        );
+
+                        if ($dateComparison !== 0) {
+                            return $dateComparison;
+                        }
+
+                        return (int) $b->status_id
+                            <=> (int) $a->status_id;
+                    })
+                    ->first();
+
+            })
+            ->sort(function ($a, $b) {
+
+                $dateComparison = strcmp(
+                    (string) $b->created_at,
+                    (string) $a->created_at
+                );
+
+                if ($dateComparison !== 0) {
+                    return $dateComparison;
+                }
+
+                return (int) $b->status_id
+                    <=> (int) $a->status_id;
+            })
+            ->values();
+
+        $latestEvaluation = $evaluations->first();
+
+        $previousEvaluation = $evaluations->skip(1)->first();
+
+        $priorityAlert = false;
+
+        if ($latestEvaluation && $previousEvaluation) {
+
+            $currentFailure = (float) $latestEvaluation->failure_percentage;
+
+            $previousFailure = (float) $previousEvaluation->failure_percentage;
+
+            if ($currentFailure >= $previousFailure) {
+                $priorityAlert = true;
             }
- 
-        } 
- 
+        }
 
+        /*
+        |--------------------------------------------------------------------------
+        | USE THE SAME EVALUATION FOR THE DISPLAY AND ALERT
+        |--------------------------------------------------------------------------
+        */
+
+        if ($latestEvaluation) {
+
+            $latestEvaluation->priority_alert = $priorityAlert;
+
+            if (in_array(
+                $latestEvaluation->academic_status,
+                ['Regular', 'Residency Risk'],
+                true
+            )) {
+                $latestEvaluation->academic_status = 'Below Treshold';
+            }
+
+            $student->setRelation('latestStatus', $latestEvaluation);
+        }
 
         /*
         |--------------------------------------------------------------------------
         | RESIDENCY WARNING FOR STUDENT LIST
         |--------------------------------------------------------------------------
-        | Residency Risk is a display/filter warning only. It does NOT
-        | replace the student's academic status.
-        |--------------------------------------------------------------------------
         */
 
-        $student->residency_risk = false;
-        $student->projected_residency_years = null;
-        $student->residency_exceeded = false;
+        $projection = $this->getResidencyProjection($student);
 
-        if (
-            $latestEvaluation &&
-            $latestEvaluation->semester_id
-        ) {
+        $student->residency_risk =
+            $projection['residency_risk'] ?? false;
 
-            $evaluationSemester =
-                $latestEvaluation->semester
-                ?? Semester::find($latestEvaluation->semester_id);
+        $student->projected_residency_years =
+            $projection['projected_residency_years'] ?? null;
 
-            $evaluationYear =
-                $this->getEvaluationYear(
-                    $evaluationSemester
-                );
+        $student->residency_exceeded =
+            $projection['residency_exceeded'] ?? false;
+    });
 
-            $yearsSpent = max(
-                0,
-                $evaluationYear - (int) $student->admission_year
-            );
+    return view(
+        'students.index',
+        compact('students')
+    );
+}
 
-            $prerequisiteResidency =
-                $this->calculatePrerequisiteResidencyImpact(
-                    $student,
-                    (int) $latestEvaluation->semester_id,
-                    $evaluationYear
-                );
-
-            $projectedResidencyYears = max(
-                $yearsSpent,
-                (int) $prerequisiteResidency['projected_years']
-            );
-
-            $student->projected_residency_years =
-                $projectedResidencyYears;
-
-            $student->residency_exceeded =
-                $yearsSpent > 6;
-
-            $student->residency_risk =
-                $projectedResidencyYears > 6;
-        }
-    }); 
- 
- 
-    return view( 
-        'students.index', 
-        compact('students') 
-    ); 
-} 
  
  
     /* 
@@ -679,13 +596,43 @@ public function index(Request $request)
         | 
         */ 
  
-        $latestStatus = StudentStatusHistory::where( 
-            'student_id', 
-            $student->student_id 
-        ) 
-            ->orderByDesc('semester_id') 
-            ->orderByDesc('status_id') 
-            ->first(); 
+        $latestStatus = $this->getLatestAcademicEvaluation($student);
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET MOST RECENTLY SUBMITTED EVALUATION
+        |--------------------------------------------------------------------------
+        | Keep this separate from $latestStatus. The latest submitted evaluation
+        | may belong to a semester whose ID is not the largest semester ID.
+        */
+        $recentEvaluationStatus = StudentStatusHistory::where(
+            'student_id',
+            $student->student_id
+        )
+            ->orderByDesc('created_at')
+            ->orderByDesc('status_id')
+            ->first();
+
+        $recentEvaluationSemesterId = $recentEvaluationStatus
+            ? (int) $recentEvaluationStatus->semester_id
+            : null;
+
+        /*
+        | Legacy status compatibility
+        |
+        | Older evaluations may still store Regular. Display it as
+        | Below Treshold without changing historical database records.
+        */
+        if (
+            $latestStatus &&
+            in_array(
+                $latestStatus->academic_status,
+                ['Regular', 'Residency Risk'],
+                true
+            )
+        ) {
+            $latestStatus->academic_status = 'Below Treshold';
+        } 
  
  
         /* 
@@ -737,6 +684,7 @@ public function index(Request $request)
                 );
 
             $projectedResidencyYears = max(
+                4,
                 $yearsSpent,
                 (int) $prerequisiteResidency['projected_years']
             );
@@ -771,9 +719,64 @@ public function index(Request $request)
             ) 
             ->orderByDesc('semester_id') 
             ->orderBy('subject_id') 
-            ->get(); 
- 
- 
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | FAILED-SUBJECT HISTORY
+        |--------------------------------------------------------------------------
+        | Failed subjects from the most recently submitted evaluation stay in
+        | Recently Evaluated Failed Subjects. Failed records from other
+        | semesters are shown in history. Do not assume semester_id values
+        | are chronological.
+        |
+        | A failed attempt is marked Resolved when a later passing attempt
+        | exists for the same student and subject.
+        */
+        $failedSubjectHistory = $failedSubjects
+            ->filter(function ($failedGrade) use (
+                $recentEvaluationSemesterId
+            ) {
+                if ($recentEvaluationSemesterId === null) {
+                    return true;
+                }
+
+                return (int) $failedGrade->semester_id
+                    !== $recentEvaluationSemesterId;
+            })
+            ->map(function ($failedGrade) use ($student) {
+                $failedGrade->backlog_resolution = AcademicGrade::where(
+                    'student_id',
+                    $student->student_id
+                )
+                    ->where('subject_id', $failedGrade->subject_id)
+                    ->where('attempt_no', '>', $failedGrade->attempt_no)
+                    ->where('grade', '>=', 75)
+                    ->exists() ? 'Resolved' : 'Unresolved';
+
+                return $failedGrade;
+            })
+            ->sortByDesc(function ($grade) {
+                $semester = $grade->semester;
+                $schoolYear = (string) optional($semester)->school_year;
+                $year = 0;
+
+                if (preg_match('/(?:19|20)\d{2}\s*[-\/]\s*((?:19|20)\d{2})/', $schoolYear, $matches)) {
+                    $year = (int) $matches[1];
+                } elseif (preg_match('/((?:19|20)\d{2})/', $schoolYear, $matches)) {
+                    $year = (int) $matches[1];
+                }
+
+                $semesterName = strtolower((string) optional($semester)->semester_name);
+                $semesterNumber = (
+                    str_contains($semesterName, '2') ||
+                    str_contains($semesterName, 'second')
+                ) ? 2 : 1;
+
+                return ($year * 10) + $semesterNumber;
+            })
+            ->values();
+
         /* 
         |-------------------------------------------------------------------------- 
         | ACTIVE / RESOLVED BACKLOGS 
@@ -913,9 +916,12 @@ public function index(Request $request)
             'students.show', 
             compact( 
                 'student', 
-                'latestStatus', 
+                'latestStatus',
+                'recentEvaluationStatus',
+                'recentEvaluationSemesterId', 
                 'semesters', 
                 'failedSubjects', 
+                'failedSubjectHistory',
                 'activeBacklogs', 
                 'resolvedBacklogs',
                 'residencyRisk',
@@ -926,6 +932,124 @@ public function index(Request $request)
         ); 
     } 
  
+
+    
+/*
+|--------------------------------------------------------------------------
+| STUDENT RESIDENCY PREDICTION
+|--------------------------------------------------------------------------
+*/
+
+public function residencyPrediction(int $id)
+{
+    if (!session()->has('user_id')) {
+        return redirect('/')
+            ->with('error', 'Please login first.');
+    }
+
+    $student = Student::findOrFail($id);
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET THE EXISTING RESIDENCY PROJECTION
+    |--------------------------------------------------------------------------
+    | Reuse the existing calculation to keep the prediction consistent
+    | with the Student page and dashboard.
+    */
+
+    $projection = $this->getResidencyProjection($student);
+
+    $residencyRisk = $projection['residency_risk'] ?? false;
+
+    $residencyExceeded = $projection['residency_exceeded'] ?? false;
+
+    $projectedResidencyYears =
+        $projection['projected_residency_years'] ?? null;
+
+    $residencyDelayedSubjects =
+        $projection['delayed_subjects'] ?? [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET THE LATEST EVALUATION
+    |--------------------------------------------------------------------------
+    */
+
+    $latestStatus = $this->getLatestAcademicEvaluation($student);
+
+    $evaluationSemester = $latestStatus && $latestStatus->semester_id
+        ? Semester::find($latestStatus->semester_id)
+        : null;
+
+    $yearsSpent = null;
+
+    if ($evaluationSemester) {
+        $evaluationYear = $this->getEvaluationYear(
+            $evaluationSemester
+        );
+
+        $yearsSpent = max(
+            0,
+            $evaluationYear - (int) $student->admission_year
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EXPLAIN THE PREDICTION
+    |--------------------------------------------------------------------------
+    */
+
+    $residencyReasons = [];
+
+    if (!$latestStatus || !$evaluationSemester) {
+        $residencyReasons[] =
+            'No evaluated semester is available to calculate the student\'s residency projection.';
+    } else {
+        if ($residencyExceeded) {
+            $residencyReasons[] =
+                'The student has already spent more than six school years based on the latest evaluated school year and admission year.';
+        }
+
+        if (!empty($residencyDelayedSubjects)) {
+            $residencyReasons[] =
+                'Unresolved failed subjects are delaying prerequisite-dependent subjects in the curriculum. These delays contribute to the projected residency.';
+        }
+
+        if (
+            !$residencyRisk &&
+            !$residencyExceeded
+        ) {
+            $residencyReasons[] =
+                'Based on the latest evaluation and the existing prerequisite-based calculation, the student is not currently predicted to exceed the six-year residency limit.';
+        }
+
+        if (
+            $residencyRisk &&
+            !$residencyExceeded &&
+            empty($residencyDelayedSubjects)
+        ) {
+            $residencyReasons[] =
+                'The existing residency calculation projects more than six school years. Review the admission year, latest evaluation, and curriculum information for the contributing factors.';
+        }
+    }
+
+    return view(
+        'students.residency-prediction',
+        compact(
+            'student',
+            'latestStatus',
+            'evaluationSemester',
+            'yearsSpent',
+            'residencyRisk',
+            'residencyExceeded',
+            'projectedResidencyYears',
+            'residencyDelayedSubjects',
+            'residencyReasons'
+        )
+    );
+}
+
  
     /* 
     |-------------------------------------------------------------------------- 
@@ -1582,7 +1706,7 @@ public function index(Request $request)
             | 
             | The admin enters only the failed subjects for this semester. 
             | A student may have zero failed subjects, in which case the 
-            | evaluation is still recorded as 0% failure and Regular. 
+            | evaluation is still recorded as 0% failure and Below Treshold. 
             | 
             */ 
  
@@ -1859,7 +1983,7 @@ public function index(Request $request)
     | 
     | 50% - 99.99% = Probation 
     | 25% - 49.99% = Academic Warning 
-    | Below 25% = Regular 
+    | Below 25% = Below Treshold 
     | 
     | PRIORITY ALERT 
     | 
@@ -2044,7 +2168,7 @@ public function index(Request $request)
  
         } else { 
  
-            $status = 'Regular'; 
+            $status = 'Below Treshold'; 
         } 
  
  
@@ -2112,6 +2236,7 @@ public function index(Request $request)
  
         $projectedResidencyYears = 
             max( 
+                4,
                 $yearsSpent, 
                 (int) $prerequisiteResidency['projected_years'] 
             ); 
@@ -2464,9 +2589,53 @@ public function index(Request $request)
      * This public wrapper allows the Home dashboard to use the exact
      * same residency calculation as the Student list and Student view.
      */
+    /**
+     * Return the latest evaluation according to the actual school year and
+     * semester, not the numeric semester_id. IDs are database identifiers and
+     * are not a reliable measure of academic chronology.
+     */
+    private function getLatestAcademicEvaluation(Student $student): ?StudentStatusHistory
+    {
+        return StudentStatusHistory::with('semester')
+            ->where('student_id', $student->student_id)
+            ->whereNotNull('semester_id')
+            ->get()
+            ->sort(function ($a, $b) {
+                $yearA = $this->getEvaluationYear($a->semester);
+                $yearB = $this->getEvaluationYear($b->semester);
+
+                if ($yearA !== $yearB) {
+                    return $yearA <=> $yearB;
+                }
+
+                $semesterA = $this->normalizeSemesterNumber(
+                    optional($a->semester)->semester_name
+                        ?? optional($a->semester)->name
+                        ?? optional($a->semester)->semester
+                        ?? null
+                ) ?? 0;
+
+                $semesterB = $this->normalizeSemesterNumber(
+                    optional($b->semester)->semester_name
+                        ?? optional($b->semester)->name
+                        ?? optional($b->semester)->semester
+                        ?? null
+                ) ?? 0;
+
+                if ($semesterA !== $semesterB) {
+                    return $semesterA <=> $semesterB;
+                }
+
+                return (int) $a->status_id <=> (int) $b->status_id;
+            })
+            ->last();
+    }
+
+
     public function getResidencyProjection(Student $student): array
     {
-        $latestEvaluation = $student->latestStatus;
+        // Use actual school-year chronology, not the numeric semester_id.
+        $latestEvaluation = $this->getLatestAcademicEvaluation($student);
 
         if (!$latestEvaluation || !$latestEvaluation->semester_id) {
             return [
@@ -2497,9 +2666,10 @@ public function index(Request $request)
             );
 
         $projectedResidencyYears = max(
-            $yearsSpent,
-            (int) $prerequisiteResidency['projected_years']
-        );
+                4,
+                $yearsSpent,
+                (int) $prerequisiteResidency['projected_years']
+            );
 
         return [
             'residency_risk' =>
@@ -2551,965 +2721,1534 @@ public function index(Request $request)
     }
 
 
-    private function calculatePrerequisiteResidencyImpact( 
-        Student $student, 
-        int $semester_id, 
-        int $evaluationYear 
-    ): array { 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | RESULT 
-        |-------------------------------------------------------------------------- 
-        | 
-        | projected_years is the projected number of school years from the 
-        | student's admission year to the latest projected curriculum slot. 
-        | 
-        | The calculation is semester-aware: 
-        | 
-        | - A failed subject is retaken in the NEXT SCHOOL YEAR in the same 
-        |   semester in which it was failed. 
-        | - A dependent subject cannot be taken until every required 
-        |   prerequisite has been passed. 
-        | - If a dependent subject is missed because its prerequisite is still 
-        |   failed, it is moved to its next available offering. 
-        | - The calculation follows prerequisite chains. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $admissionYear = (int) $student->admission_year; 
- 
-        $currentSemester = Semester::find($semester_id); 
- 
-        $currentSlot = $this->getSemesterSlot($currentSemester); 
- 
-        $fallbackCurrentYear = 
-            $currentSlot['year'] !== null 
-                ? $currentSlot['year'] 
-                : (int) $evaluationYear; 
- 
-        $baseProjectedYears = max( 
-            0, 
-            $fallbackCurrentYear - $admissionYear 
-        ); 
- 
-        $result = [ 
-            'projected_years' => $baseProjectedYears, 
-            'delay_years' => 0, 
-            'delayed_subjects' => [], 
-        ]; 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | GET PROSPECTUS 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $prospectusSubjects = DB::table('prospectus') 
-            ->select( 
-                'subject_id', 
-                'subject_code', 
-                'subject_title', 
-                'year_level', 
-                'semester', 
-                'prerequisite' 
-            ) 
-            ->get(); 
- 
-        if ($prospectusSubjects->isEmpty()) { 
-            return $result; 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | BUILD SUBJECT LOOKUPS 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $subjectById = []; 
-        $subjectByCode = []; 
- 
-        foreach ($prospectusSubjects as $subject) { 
- 
-            $subjectById[(int) $subject->subject_id] = $subject; 
- 
-            $code = $this->normalizeCourseCode( 
-                $subject->subject_code 
-            ); 
- 
-            if ($code !== '') { 
-                $subjectByCode[$code] = $subject; 
-            } 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | GET THE LATEST ATTEMPT FOR EACH SUBJECT 
-        |-------------------------------------------------------------------------- 
-        | 
-        | A subject is considered resolved only when its latest attempt is 
-        | 75 or higher. A previous failure followed by a passing attempt is 
-        | therefore not treated as a current prerequisite blocker. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $latestGrades = AcademicGrade::where( 
-            'student_id', 
-            $student->student_id 
-        ) 
-            ->orderBy('subject_id') 
-            ->orderByDesc('attempt_no') 
-            ->orderByDesc('grade_id') 
-            ->get() 
-            ->groupBy('subject_id') 
-            ->map(function ($grades) { 
-                return $grades->first(); 
-            }); 
- 
-        $passedSubjects = []; 
-        $failedSubjects = []; 
- 
-        foreach ($latestGrades as $grade) { 
- 
-            $subjectId = (int) $grade->subject_id; 
- 
-            if (!isset($subjectById[$subjectId])) { 
-                continue; 
-            } 
- 
-            if ((float) $grade->grade >= 75) { 
- 
-                $passedSubjects[$subjectId] = true; 
- 
-            } else { 
- 
-                $failedSubjects[$subjectId] = $grade; 
-            } 
-        } 
- 
-        if (empty($failedSubjects)) { 
-            return $result; 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | BUILD PREREQUISITE REQUIREMENTS 
-        |-------------------------------------------------------------------------- 
-        | 
-        | The parser supports common values such as: 
-        |   IT101 
-        |   IT101, IT102 
-        |   IT101 and IT102 
-        |   IT101 / IT102 
-        |   IT101 or IT102 
-        | 
-        | For OR expressions, a dependent subject is considered satisfied 
-        | when at least one prerequisite in the OR group is passed. 
-        | Commas, AND and slash are treated as separate required prerequisites. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $parsePrerequisites = function ($text) { 
- 
-            $text = trim((string) $text); 
- 
-            if ( 
-                $text === '' || 
-                in_array( 
-                    strtoupper($text), 
-                    ['NONE', 'N/A', 'NA', '-', '0'], 
-                    true 
-                ) 
-            ) { 
-                return []; 
-            } 
- 
-            $groups = preg_split( 
-                '/\s+OR\s+/i', 
-                $text 
-            ); 
- 
-            $requirements = []; 
- 
-            foreach ($groups as $group) { 
- 
-                $tokens = preg_split( 
-                    '/\s*(?:,|;|\/|&|\s+AND\s+)\s*/i', 
-                    trim($group) 
-                ); 
- 
-                $codes = []; 
- 
-                foreach ($tokens as $token) { 
- 
-                    $code = $this->normalizeCourseCode($token); 
- 
-                    if ($code !== '') { 
-                        $codes[] = $code; 
-                    } 
-                } 
- 
-                if (!empty($codes)) { 
-                    $requirements[] = array_values( 
-                        array_unique($codes) 
-                    ); 
-                } 
-            } 
- 
-            return $requirements; 
-        }; 
- 
-        $requirementsBySubjectId = []; 
-        $dependencyMap = []; 
- 
-        foreach ($prospectusSubjects as $subject) { 
- 
-            $requirements = $parsePrerequisites( 
-                $subject->prerequisite 
-            ); 
- 
-            $requirementsBySubjectId[ 
-                (int) $subject->subject_id 
-            ] = $requirements; 
- 
-            foreach ($requirements as $group) { 
- 
-                foreach ($group as $prerequisiteCode) { 
- 
-                    $dependencyMap[$prerequisiteCode][] = $subject; 
-                } 
-            } 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | SUBJECT SLOT HELPERS 
-        |-------------------------------------------------------------------------- 
-        | 
-        | The prospectus year_level + semester determine the normal curriculum 
-        | slot. A first-year first-semester subject is slot 0, first-year 
-        | second-semester is slot 1, second-year first-semester is slot 2, etc. 
-        | 
-        | This is used only for projection; existing grade records are never 
-        | changed by this calculation. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $subjectNormalSlot = function ($subject) use ($admissionYear) { 
- 
-            $yearLevel = $this->normalizeYearLevel( 
-                $subject->year_level 
-            ); 
- 
-            $semesterNumber = $this->normalizeSemesterNumber( 
-                $subject->semester 
-            ); 
- 
-            if ($yearLevel === null || $semesterNumber === null) { 
-                return null; 
-            } 
- 
-            return [ 
-                'year' => $admissionYear + ($yearLevel - 1), 
-                'semester' => $semesterNumber, 
-                'index' => 
-                    (($admissionYear + ($yearLevel - 1)) * 2) 
-                    + ($semesterNumber - 1), 
-            ]; 
-        }; 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | FIND ORIGINAL FAILURE SLOT 
-        |-------------------------------------------------------------------------- 
-        | 
-        | The retake rule is based on the semester in which the subject was 
-        | failed. Example: 
-        | 
-        |   Failed: 2025-2026, 2nd Semester 
-        |   Retake: 2026-2027, 2nd Semester 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $failureSlotForSubject = function ($grade) { 
- 
-            $failureSemester = Semester::find( 
-                $grade->semester_id 
-            ); 
- 
-            $slot = $this->getSemesterSlot( 
-                $failureSemester 
-            ); 
- 
-            if ( 
-                $slot['year'] === null || 
-                $slot['semester'] === null 
-            ) { 
-                return null; 
-            } 
- 
-            return [ 
-                'year' => $slot['year'] + 1, 
-                'semester' => $slot['semester'], 
-                'index' => 
-                    (($slot['year'] + 1) * 2) 
-                    + ($slot['semester'] - 1), 
-            ]; 
-        }; 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | EARLIEST OFFERING AFTER A GIVEN SLOT 
-        |-------------------------------------------------------------------------- 
-        | 
-        | A subject may be offered only in its prospectus semester. Once its 
-        | prerequisites are satisfied, it is placed in the first offering 
-        | strictly after the semester in which the prerequisite was passed. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $nextOfferingAfter = function ($subject, $afterSlot) { 
- 
-            $semesterNumber = $this->normalizeSemesterNumber( 
-                $subject->semester 
-            ); 
- 
-            if ($semesterNumber === null) { 
-                return null; 
-            } 
- 
-            $year = (int) $afterSlot['year']; 
-            $afterSemester = (int) $afterSlot['semester']; 
- 
-            if ($semesterNumber <= $afterSemester) { 
-                $year++; 
-            } 
- 
-            return [ 
-                'year' => $year, 
-                'semester' => $semesterNumber, 
-                'index' => 
-                    ($year * 2) + ($semesterNumber - 1), 
-            ]; 
-        }; 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | INITIAL SUBJECT COMPLETION SLOTS 
-        |-------------------------------------------------------------------------- 
-        | 
-        | Passed subjects are already completed. 
-        | Failed subjects receive their next-school-year same-semester retake 
-        | slot. Unattempted subjects use their normal prospectus slot. 
-        | 
-        | The current evaluation semester is also respected so the projection 
-        | never places an unresolved subject in a semester that has already 
-        | passed. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $completionSlots = []; 
-        $failedSubjectCodes = []; 
- 
-        foreach ($prospectusSubjects as $subject) { 
- 
-            $subjectId = (int) $subject->subject_id; 
-            $normalSlot = $subjectNormalSlot($subject); 
- 
-            if ($normalSlot === null) { 
-                continue; 
-            } 
- 
-            if (isset($passedSubjects[$subjectId])) { 
- 
-                $completionSlots[$subjectId] = [ 
-                    'year' => null, 
-                    'semester' => null, 
-                    'index' => null, 
-                    'fixed' => true, 
-                ]; 
- 
-                continue; 
-            } 
- 
-            if (isset($failedSubjects[$subjectId])) { 
- 
-                $failedGrade = $failedSubjects[$subjectId]; 
-                $retakeSlot = $failureSlotForSubject($failedGrade); 
- 
-                if ($retakeSlot !== null) { 
-                    $completionSlots[$subjectId] = [ 
-                        'year' => $retakeSlot['year'], 
-                        'semester' => $retakeSlot['semester'], 
-                        'index' => $retakeSlot['index'], 
-                        'fixed' => false, 
-                    ]; 
-                } else { 
-                    $completionSlots[$subjectId] = [ 
-                        'year' => $normalSlot['year'], 
-                        'semester' => $normalSlot['semester'], 
-                        'index' => $normalSlot['index'], 
-                        'fixed' => false, 
-                    ]; 
-                } 
- 
-                $failedSubjectCodes[$subjectId] = 
-                    trim((string) $subject->subject_code); 
- 
-                continue; 
-            } 
- 
-            /* 
-            | Do not schedule an unattempted subject before the student's 
-            | current evaluation point. 
-            */ 
-            $normalIndex = $normalSlot['index']; 
- 
-            if ( 
-                $currentSlot['index'] !== null && 
-                $normalIndex <= $currentSlot['index'] 
-            ) { 
-                /* 
-                | If an old curriculum subject has not been attempted yet, 
-                | it is already overdue and must be scheduled at its next 
-                | available offering from the current point. 
-                */ 
-                $afterSlot = $currentSlot; 
- 
-                $nextSlot = $nextOfferingAfter( 
-                    $subject, 
-                    $afterSlot 
-                ); 
- 
-                $completionSlots[$subjectId] = [ 
-                    'year' => $nextSlot['year'], 
-                    'semester' => $nextSlot['semester'], 
-                    'index' => $nextSlot['index'], 
-                    'fixed' => false, 
-                ]; 
- 
-            } else { 
- 
-                $completionSlots[$subjectId] = [ 
-                    'year' => $normalSlot['year'], 
-                    'semester' => $normalSlot['semester'], 
-                    'index' => $normalSlot['index'], 
-                    'fixed' => false, 
-                ]; 
-            } 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | ITERATIVELY APPLY PREREQUISITE DELAYS 
-        |-------------------------------------------------------------------------- 
-        | 
-        | If a prerequisite is delayed, every dependent subject is moved to 
-        | the first semester in which it is offered AFTER that prerequisite 
-        | has been passed. This repeats until the schedule stops changing. 
-        | 
-        | This handles chains such as: 
-        | 
-        |   A failed 
-        |      -> B requires A 
-        |      -> C requires B 
-        |      -> D requires C 
-        | 
-        | without assuming that every dependency is only a one-year delay. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $maxIterations = max( 
-            10, 
-            count($prospectusSubjects) * 3 
-        ); 
- 
-        for ($iteration = 0; $iteration < $maxIterations; $iteration++) { 
- 
-            $changed = false; 
- 
-            foreach ($prospectusSubjects as $subject) { 
- 
-                $subjectId = (int) $subject->subject_id; 
- 
-                if (!isset($completionSlots[$subjectId])) { 
-                    continue; 
-                } 
- 
-                /* 
-                | Already passed subjects do not need rescheduling. 
-                */ 
-                if ($completionSlots[$subjectId]['fixed']) { 
-                    continue; 
-                } 
- 
-                $requirements = 
-                    $requirementsBySubjectId[$subjectId] ?? []; 
- 
-                if (empty($requirements)) { 
-                    continue; 
-                } 
- 
-                /* 
-                | A prerequisite expression is represented as alternatives: 
-                | A AND B = one group containing A and B. 
-                | A OR B  = two alternative groups: A or B. 
-                */ 
-                $alternativeCompletionIndexes = []; 
- 
-                foreach ($requirements as $group) { 
- 
-                    $groupSatisfied = true; 
-                    $groupLatestIndex = 
-                        (int) ($currentSlot['index'] ?? 0); 
- 
-                    foreach ($group as $prerequisiteCode) { 
- 
-                        $prerequisite = 
-                            $subjectByCode[$prerequisiteCode] ?? null; 
- 
-                        if (!$prerequisite) { 
-                            $groupSatisfied = false; 
-                            break; 
-                        } 
- 
-                        $prerequisiteId = 
-                            (int) $prerequisite->subject_id; 
- 
-                        if (!isset($completionSlots[$prerequisiteId])) { 
-                            $groupSatisfied = false; 
-                            break; 
-                        } 
- 
-                        $prerequisiteSlot = 
-                            $completionSlots[$prerequisiteId]; 
- 
-                        if ($prerequisiteSlot['fixed']) { 
-                            continue; 
-                        } 
- 
-                        if ($prerequisiteSlot['index'] === null) { 
-                            $groupSatisfied = false; 
-                            break; 
-                        } 
- 
-                        $groupLatestIndex = max( 
-                            $groupLatestIndex, 
-                            (int) $prerequisiteSlot['index'] 
-                        ); 
-                    } 
- 
-                    if ($groupSatisfied) { 
-                        $alternativeCompletionIndexes[] = 
-                            $groupLatestIndex; 
-                    } 
-                } 
- 
-                if (empty($alternativeCompletionIndexes)) { 
-                    continue; 
-                } 
- 
-                /* Use the earliest prerequisite alternative. */ 
-                $requiredAfterIndex = min( 
-                    $alternativeCompletionIndexes 
-                ); 
- 
-                if ($requiredAfterIndex === null) { 
-                    continue; 
-                } 
- 
-                $currentIndex = 
-                    (int) $completionSlots[$subjectId]['index']; 
- 
-                if ($currentIndex <= $requiredAfterIndex) { 
- 
-                    $afterYear = intdiv( 
-                        $requiredAfterIndex, 
-                        2 
-                    ); 
- 
-                    $afterSemester = 
-                        ($requiredAfterIndex % 2) + 1; 
- 
-                    $nextSlot = $nextOfferingAfter( 
-                        $subject, 
-                        [ 
-                            'year' => $afterYear, 
-                            'semester' => $afterSemester, 
-                            'index' => $requiredAfterIndex, 
-                        ] 
-                    ); 
- 
-                    if ( 
-                        $nextSlot !== null && 
-                        $nextSlot['index'] > $currentIndex 
-                    ) { 
- 
-                        $completionSlots[$subjectId] = [ 
-                            'year' => $nextSlot['year'], 
-                            'semester' => $nextSlot['semester'], 
-                            'index' => $nextSlot['index'], 
-                            'fixed' => false, 
-                        ]; 
- 
-                        $changed = true; 
-                    } 
-                } 
-            } 
- 
-            if (!$changed) { 
-                break; 
-            } 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | IDENTIFY SUBJECTS ACTUALLY DELAYED BY FAILED PREREQUISITES 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $delayedSubjects = []; 
-        $maxProjectedIndex = 
-            $currentSlot['index'] !== null 
-                ? (int) $currentSlot['index'] 
-                : (($evaluationYear * 2) + 1); 
- 
-        foreach ($prospectusSubjects as $subject) { 
- 
-            $subjectId = (int) $subject->subject_id; 
- 
-            if (!isset($completionSlots[$subjectId])) { 
-                continue; 
-            } 
- 
-            $slot = $completionSlots[$subjectId]; 
- 
-            if ( 
-                $slot['index'] !== null && 
-                $slot['index'] > $maxProjectedIndex 
-            ) { 
-                $maxProjectedIndex = $slot['index']; 
-            } 
- 
-            $normalSlot = $subjectNormalSlot($subject); 
- 
-            if ( 
-                $normalSlot === null || 
-                $slot['index'] === null 
-            ) { 
-                continue; 
-            } 
- 
-            $requirements = 
-                $requirementsBySubjectId[$subjectId] ?? []; 
- 
-            $blockedByFailedPrerequisite = false; 
- 
-            foreach ($requirements as $group) { 
- 
-                foreach ($group as $prerequisiteCode) { 
- 
-                    $prerequisite = 
-                        $subjectByCode[$prerequisiteCode] ?? null; 
- 
-                    if (!$prerequisite) { 
-                        continue; 
-                    } 
- 
-                    $prerequisiteId = 
-                        (int) $prerequisite->subject_id; 
- 
-                    if ( 
-                        isset($failedSubjects[$prerequisiteId]) 
-                    ) { 
-                        $blockedByFailedPrerequisite = true; 
-                        break 2; 
-                    } 
-                } 
-            } 
- 
-            if ( 
-                $blockedByFailedPrerequisite && 
-                $slot['index'] > $normalSlot['index'] 
-            ) { 
- 
-                $delayedSubjects[$subjectId] = [ 
-                    'code' => trim((string) $subject->subject_code), 
-                    'title' => $subject->subject_title, 
-                    'delay' => max( 
-                        1, 
-                        (int) ceil( 
-                            ($slot['index'] - $normalSlot['index']) / 2 
-                        ) 
-                    ), 
-                ]; 
-            } 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | ALSO REPORT THE FAILED SUBJECTS THEMSELVES WHEN THEIR RETAKE 
-        | PUSHES THEM PAST THE CURRENT CURRICULUM SLOT 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        foreach ($failedSubjects as $subjectId => $failedGrade) { 
- 
-            $subject = $subjectById[$subjectId] ?? null; 
- 
-            if (!$subject) { 
-                continue; 
-            } 
- 
-            $normalSlot = $subjectNormalSlot($subject); 
-            $completionSlot = $completionSlots[$subjectId] ?? null; 
- 
-            if ( 
-                $normalSlot === null || 
-                $completionSlot === null || 
-                $completionSlot['index'] === null 
-            ) { 
-                continue; 
-            } 
- 
-            if ($completionSlot['index'] > $normalSlot['index']) { 
- 
-                $code = trim((string) $subject->subject_code); 
- 
-                $delayedSubjects[$subjectId] = [ 
-                    'code' => $code, 
-                    'title' => $subject->subject_title, 
-                    'delay' => max( 
-                        1, 
-                        (int) ceil( 
-                            ($completionSlot['index'] - $normalSlot['index']) / 2 
-                        ) 
-                    ), 
-                ]; 
-            } 
-        } 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | PROJECTED RESIDENCY 
-        |-------------------------------------------------------------------------- 
-        | 
-        | Convert the final projected semester into a school-year count from 
-        | admission. A student at any point in school year N has spent N minus 
-        | admissionYear completed school years, while a projected subject in 
-        | that school year keeps the same residency-year count. 
-        | 
-        |-------------------------------------------------------------------------- 
-        */ 
- 
-        $projectedYear = 
-            intdiv( 
-                $maxProjectedIndex, 
-                2 
-            ); 
- 
-        $projectedYears = max( 
-            $baseProjectedYears, 
-            $projectedYear - $admissionYear 
-        ); 
- 
-        $maxDelay = 0; 
-        $delayedSubjectCodes = []; 
- 
-        foreach ($delayedSubjects as $delayed) { 
- 
-            $maxDelay = max( 
-                $maxDelay, 
-                (int) $delayed['delay'] 
-            ); 
- 
-            if ($delayed['code'] !== '') { 
-                $delayedSubjectCodes[] = $delayed['code']; 
-            } 
-        } 
- 
-        $result['delay_years'] = $maxDelay; 
-        $result['delayed_subjects'] = array_values( 
-            array_unique($delayedSubjectCodes) 
-        ); 
-        $result['projected_years'] = $projectedYears; 
- 
-        return $result; 
+    private function calculatePrerequisiteResidencyImpact(
+        Student $student,
+        int $semester_id,
+        int $evaluationYear
+    ): array {
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESIDENCY PROJECTION RULES
+        |--------------------------------------------------------------------------
+        |
+        | 1. The normal four-year curriculum comes from the Prospectus.
+        | 2. A failed subject is retaken in the next school year in the
+        |    same semester in which it was failed.
+        | 3. If the same subject is failed again, the NEW/latest failure
+        |    creates another one-year retake delay.
+        | 4. A prerequisite must be completed before its dependent subject
+        |    can be completed.
+        | 5. If a prerequisite is completed late, all dependent subjects
+        |    are moved to their next available offering.
+        | 6. The calculation follows prerequisite chains.
+        | 7. A subject marked as passed is treated as completed in the
+        |    semester of its latest passing attempt, so it can immediately
+        |    remove the prerequisite block from future projections.
+        |
+        | This calculation does not create a new table and does not change
+        | existing grade records.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $admissionYear = (int) $student->admission_year;
+
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT EVALUATION SLOT
+        |--------------------------------------------------------------------------
+        | Unresolved subjects must be projected forward from the semester
+        | currently being evaluated. Do not leave a missed retake or an
+        | unrecorded curriculum subject in a semester that has already passed.
+        |--------------------------------------------------------------------------
+        */
+
+        $evaluationSemester = Semester::find($semester_id);
+        $evaluationSlot = $this->getSemesterSlot($evaluationSemester);
+
+        if (
+            $evaluationSlot['year'] === null ||
+            $evaluationSlot['semester'] === null ||
+            $evaluationSlot['index'] === null
+        ) {
+            $evaluationSlot = [
+                'year' => $evaluationYear,
+                'semester' => 2,
+                'index' => ($evaluationYear * 2) + 1,
+            ];
+        }
+
+        $result = [
+            'projected_years' => 0,
+            'delay_years' => 0,
+            'delayed_subjects' => [],
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET PROSPECTUS
+        |--------------------------------------------------------------------------
+        */
+
+        $prospectusSubjects = DB::table('prospectus')
+            ->select(
+                'subject_id',
+                'subject_code',
+                'subject_title',
+                'year_level',
+                'semester',
+                'prerequisite'
+            )
+            ->get();
+
+        if ($prospectusSubjects->isEmpty()) {
+            $result['projected_years'] = max(
+                0,
+                $evaluationYear - $admissionYear
+            );
+
+            return $result;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUILD SUBJECT LOOKUPS
+        |--------------------------------------------------------------------------
+        */
+
+        $subjectById = [];
+        $subjectByCode = [];
+
+        foreach ($prospectusSubjects as $subject) {
+
+            $subjectById[(int) $subject->subject_id] =
+                $subject;
+
+            $code = $this->normalizeCourseCode(
+                $subject->subject_code
+            );
+
+            if ($code !== '') {
+                $subjectByCode[$code] =
+                    $subject;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET LATEST ATTEMPT FOR EACH SUBJECT
+        |--------------------------------------------------------------------------
+        |
+        | The latest attempt is the current state of the subject:
+        |
+        | 75+ = completed
+        | 74 or below = unresolved failure
+        |
+        | This is important when the same subject is failed more than once.
+        | The latest failed attempt determines the next retake slot.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $latestGrades = AcademicGrade::where(
+            'student_id',
+            $student->student_id
+        )
+            ->orderBy('subject_id')
+            ->orderByDesc('attempt_no')
+            ->orderByDesc('grade_id')
+            ->get()
+            ->groupBy('subject_id')
+            ->map(function ($grades) {
+                return $grades->first();
+            });
+
+        $passedSubjects = [];
+        $failedSubjects = [];
+
+        foreach ($latestGrades as $grade) {
+
+            $subjectId =
+                (int) $grade->subject_id;
+
+            if (!isset($subjectById[$subjectId])) {
+                continue;
+            }
+
+            if ((float) $grade->grade >= 75) {
+
+                $passedSubjects[$subjectId] =
+                    $grade;
+
+            } else {
+
+                $failedSubjects[$subjectId] =
+                    $grade;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PARSE PREREQUISITES
+        |--------------------------------------------------------------------------
+        |
+        | Supported examples:
+        |   PROG 1
+        |   PROG 1, MS 1
+        |   PROG 1 AND MS 1
+        |   PROG 1 / MS 1
+        |   PROG 1 OR MS 1
+        |   All
+        |
+        | For OR, each OR group is an alternative.
+        | For AND/comma/slash, all subjects in that group are required.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $parsePrerequisites = function ($text) {
+
+            $text = trim(
+                (string) $text
+            );
+
+            if (
+                $text === '' ||
+                in_array(
+                    strtoupper($text),
+                    ['NONE', 'N/A', 'NA', '-', '0'],
+                    true
+                )
+            ) {
+                return [];
+            }
+
+            $groups = preg_split(
+                '/\s+OR\s+/i',
+                $text
+            );
+
+            $requirements = [];
+
+            foreach ($groups as $group) {
+
+                $tokens = preg_split(
+                    '/\s*(?:,|;|\/|&|\s+AND\s+)\s*/i',
+                    trim($group)
+                );
+
+                $codes = [];
+
+                foreach ($tokens as $token) {
+
+                    $code =
+                        $this->normalizeCourseCode(
+                            $token
+                        );
+
+                    if ($code !== '') {
+                        $codes[] = $code;
+                    }
+                }
+
+                if (!empty($codes)) {
+
+                    $requirements[] =
+                        array_values(
+                            array_unique($codes)
+                        );
+                }
+            }
+
+            return $requirements;
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUILD PREREQUISITE REQUIREMENTS
+        |--------------------------------------------------------------------------
+        */
+
+        $requirementsBySubjectId = [];
+
+        foreach ($prospectusSubjects as $subject) {
+
+            $prerequisiteText =
+                trim(
+                    (string) $subject->prerequisite
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | "ALL" MEANS ALL PREVIOUS CURRICULUM SUBJECTS
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                strtoupper($prerequisiteText) ===
+                'ALL'
+            ) {
+
+                $subjectYearLevel =
+                    $this->normalizeYearLevel(
+                        $subject->year_level
+                    );
+
+                $subjectSemesterNumber =
+                    $this->normalizeSemesterNumber(
+                        $subject->semester
+                    );
+
+                $requirements = [];
+
+                if (
+                    $subjectYearLevel !== null &&
+                    $subjectSemesterNumber !== null
+                ) {
+
+                    $subjectCurriculumPosition =
+                        ($subjectYearLevel * 2)
+                        + ($subjectSemesterNumber - 1);
+
+                    $allPrerequisiteCodes = [];
+
+                    foreach ($prospectusSubjects as $candidate) {
+
+                        if (
+                            (int) $candidate->subject_id ===
+                            (int) $subject->subject_id
+                        ) {
+                            continue;
+                        }
+
+                        $candidateYearLevel =
+                            $this->normalizeYearLevel(
+                                $candidate->year_level
+                            );
+
+                        $candidateSemesterNumber =
+                            $this->normalizeSemesterNumber(
+                                $candidate->semester
+                            );
+
+                        if (
+                            $candidateYearLevel === null ||
+                            $candidateSemesterNumber === null
+                        ) {
+                            continue;
+                        }
+
+                        $candidateCurriculumPosition =
+                            ($candidateYearLevel * 2)
+                            + ($candidateSemesterNumber - 1);
+
+                        if (
+                            $candidateCurriculumPosition >=
+                            $subjectCurriculumPosition
+                        ) {
+                            continue;
+                        }
+
+                        $candidateCode =
+                            $this->normalizeCourseCode(
+                                $candidate->subject_code
+                            );
+
+                        if ($candidateCode !== '') {
+                            $allPrerequisiteCodes[] =
+                                $candidateCode;
+                        }
+                    }
+
+                    $allPrerequisiteCodes =
+                        array_values(
+                            array_unique(
+                                $allPrerequisiteCodes
+                            )
+                        );
+
+                    if (!empty($allPrerequisiteCodes)) {
+
+                        $requirements = [
+                            $allPrerequisiteCodes
+                        ];
+                    }
+                }
+
+            } else {
+
+                $requirements =
+                    $parsePrerequisites(
+                        $prerequisiteText
+                    );
+            }
+
+            $requirementsBySubjectId[
+                (int) $subject->subject_id
+            ] = $requirements;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBJECT NORMAL SLOT
+        |--------------------------------------------------------------------------
+        |
+        | Example:
+        | Admission Year = 2024
+        |
+        | 1st Year = school year ending 2025
+        | 2nd Year = school year ending 2026
+        | 3rd Year = school year ending 2027
+        | 4th Year = school year ending 2028
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $subjectNormalSlot = function ($subject) use (
+            $admissionYear
+        ) {
+
+            $yearLevel =
+                $this->normalizeYearLevel(
+                    $subject->year_level
+                );
+
+            $semesterNumber =
+                $this->normalizeSemesterNumber(
+                    $subject->semester
+                );
+
+            if (
+                $yearLevel === null ||
+                $semesterNumber === null
+            ) {
+                return null;
+            }
+
+            $projectedSchoolYear =
+                $admissionYear + $yearLevel;
+
+            return [
+                'year' =>
+                    $projectedSchoolYear,
+
+                'semester' =>
+                    $semesterNumber,
+
+                'index' =>
+                    (
+                        $projectedSchoolYear * 2
+                    )
+                    + ($semesterNumber - 1),
+            ];
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACTUAL COMPLETION SLOT OF A PASSED ATTEMPT
+        |--------------------------------------------------------------------------
+        */
+
+        $gradeCompletionSlot = function ($grade) {
+
+            $semester =
+                Semester::find(
+                    $grade->semester_id
+                );
+
+            $slot =
+                $this->getSemesterSlot(
+                    $semester
+                );
+
+            if (
+                $slot['year'] === null ||
+                $slot['semester'] === null
+            ) {
+                return null;
+            }
+
+            return [
+                'year' =>
+                    $slot['year'],
+
+                'semester' =>
+                    $slot['semester'],
+
+                'index' =>
+                    $slot['index'],
+            ];
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | RETAKE SLOT OF A FAILED ATTEMPT
+        |--------------------------------------------------------------------------
+        |
+        | A failed subject is retaken in the next school year in the
+        | same semester.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $failureRetakeSlot = function ($grade) {
+
+            $failureSemester =
+                Semester::find(
+                    $grade->semester_id
+                );
+
+            $slot =
+                $this->getSemesterSlot(
+                    $failureSemester
+                );
+
+            if (
+                $slot['year'] === null ||
+                $slot['semester'] === null
+            ) {
+                return null;
+            }
+
+            $retakeYear =
+                $slot['year'] + 1;
+
+            return [
+                'year' =>
+                    $retakeYear,
+
+                'semester' =>
+                    $slot['semester'],
+
+                'index' =>
+                    (
+                        $retakeYear * 2
+                    )
+                    + ($slot['semester'] - 1),
+            ];
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | NEXT OFFERING AFTER A COMPLETION SLOT
+        |--------------------------------------------------------------------------
+        |
+        | A subject can only be completed in its prospectus semester.
+        | The offering must be strictly after the prerequisite completion.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $nextOfferingAfter =
+            function (
+                $subject,
+                $afterSlot
+            ) {
+
+                $semesterNumber =
+                    $this->normalizeSemesterNumber(
+                        $subject->semester
+                    );
+
+                if ($semesterNumber === null) {
+                    return null;
+                }
+
+                $year =
+                    (int) $afterSlot['year'];
+
+                $afterSemester =
+                    (int) $afterSlot['semester'];
+
+                if (
+                    $semesterNumber <=
+                    $afterSemester
+                ) {
+                    $year++;
+                }
+
+                return [
+                    'year' =>
+                        $year,
+
+                    'semester' =>
+                        $semesterNumber,
+
+                    'index' =>
+                        (
+                            $year * 2
+                        )
+                        + ($semesterNumber - 1),
+                ];
+            };
+
+        /*
+        |--------------------------------------------------------------------------
+        | INITIAL COMPLETION SLOTS
+        |--------------------------------------------------------------------------
+        |
+        | PASSED:
+        |   Use the actual semester in which the latest passing attempt
+        |   was recorded.
+        |
+        | FAILED:
+        |   Use the next-school-year same-semester retake.
+        |
+        | NEVER ENCODED:
+        |   Use the normal Prospectus slot.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $completionSlots = [];
+
+        foreach ($prospectusSubjects as $subject) {
+
+            $subjectId =
+                (int) $subject->subject_id;
+
+            $normalSlot =
+                $subjectNormalSlot(
+                    $subject
+                );
+
+            if ($normalSlot === null) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | ALREADY PASSED
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                isset(
+                    $passedSubjects[$subjectId]
+                )
+            ) {
+
+                $passedSlot =
+                    $gradeCompletionSlot(
+                        $passedSubjects[$subjectId]
+                    );
+
+                if ($passedSlot !== null) {
+
+                    $completionSlots[$subjectId] = [
+                        'year' =>
+                            $passedSlot['year'],
+
+                        'semester' =>
+                            $passedSlot['semester'],
+
+                        'index' =>
+                            $passedSlot['index'],
+
+                        'fixed' =>
+                            true,
+                    ];
+
+                } else {
+
+                    $completionSlots[$subjectId] = [
+                        'year' =>
+                            $normalSlot['year'],
+
+                        'semester' =>
+                            $normalSlot['semester'],
+
+                        'index' =>
+                            $normalSlot['index'],
+
+                        'fixed' =>
+                            true,
+                    ];
+                }
+
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | CURRENTLY FAILED / UNRESOLVED
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                isset(
+                    $failedSubjects[$subjectId]
+                )
+            ) {
+
+                $retakeSlot =
+                    $failureRetakeSlot(
+                        $failedSubjects[$subjectId]
+                    );
+
+                /*
+                |--------------------------------------------------------------------------
+                | DO NOT PROJECT AN OVERDUE RETAKE IN THE PAST
+                |--------------------------------------------------------------------------
+                | If the next retake opportunity after the recorded failure has
+                | already passed by the current evaluated semester, project the
+                | next offering after the current evaluation instead.
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $retakeSlot !== null &&
+                    $retakeSlot['index'] <= $evaluationSlot['index']
+                ) {
+                    $retakeSlot = $nextOfferingAfter(
+                        $subject,
+                        $evaluationSlot
+                    );
+                }
+
+                if ($retakeSlot !== null) {
+
+                    $completionSlots[$subjectId] = [
+                        'year' =>
+                            $retakeSlot['year'],
+
+                        'semester' =>
+                            $retakeSlot['semester'],
+
+                        'index' =>
+                            $retakeSlot['index'],
+
+                        'fixed' =>
+                            false,
+                    ];
+
+                } else {
+
+                    $completionSlots[$subjectId] = [
+                        'year' =>
+                            $normalSlot['year'],
+
+                        'semester' =>
+                            $normalSlot['semester'],
+
+                        'index' =>
+                            $normalSlot['index'],
+
+                        'fixed' =>
+                            false,
+                    ];
+                }
+
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NO GRADE RECORD
+            |--------------------------------------------------------------------------
+            |
+            | The system encodes FAILED SUBJECTS only. Therefore, a subject with
+            | no AcademicGrade record is NOT treated as an uncompleted subject.
+            | It is assumed to have been completed in its normal Prospectus slot.
+            |
+            | This prevents subjects that were not encoded because they were
+            | passed from being incorrectly projected into later school years.
+            |
+            |--------------------------------------------------------------------------
+            */
+
+            $completionSlots[$subjectId] = [
+                'year' =>
+                    $normalSlot['year'],
+
+                'semester' =>
+                    $normalSlot['semester'],
+
+                'index' =>
+                    $normalSlot['index'],
+
+                'fixed' =>
+                    true,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ITERATIVELY APPLY PREREQUISITE DELAYS
+        |--------------------------------------------------------------------------
+        |
+        | This is what makes repeated prerequisite failures propagate:
+        |
+        | PROG 1
+        |    ↓
+        | PROG 2
+        |    ↓
+        | DATASTRUC 1
+        |    ↓
+        | DBMS 1
+        |    ↓
+        | DBMS 2
+        |
+        | If PROG 1 is failed again, its completion moves another year.
+        | Every dependent subject is then moved to its next available
+        | semester, and the process continues through the chain.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $maxIterations =
+            max(
+                10,
+                count($prospectusSubjects) * 5
+            );
+
+        for (
+            $iteration = 0;
+            $iteration < $maxIterations;
+            $iteration++
+        ) {
+
+            $changed = false;
+
+            foreach (
+                $prospectusSubjects
+                as $subject
+            ) {
+
+                $subjectId =
+                    (int) $subject->subject_id;
+
+                if (
+                    !isset(
+                        $completionSlots[$subjectId]
+                    )
+                ) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | PASSED SUBJECTS KEEP THEIR ACTUAL COMPLETION
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $completionSlots[$subjectId]['fixed']
+                ) {
+                    continue;
+                }
+
+                $requirements =
+                    $requirementsBySubjectId[
+                        $subjectId
+                    ] ?? [];
+
+                if (empty($requirements)) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | CHECK EACH PREREQUISITE ALTERNATIVE
+                |--------------------------------------------------------------------------
+                |
+                | Example:
+                |
+                | A AND B
+                | = both must be completed.
+                |
+                | A OR B
+                | = either complete alternative is enough.
+                |
+                |--------------------------------------------------------------------------
+                */
+
+                $alternativeCompletionIndexes = [];
+
+                foreach (
+                    $requirements as $group
+                ) {
+
+                    $groupSatisfied = true;
+
+                    $groupLatestIndex = null;
+
+                    foreach (
+                        $group as
+                        $prerequisiteCode
+                    ) {
+
+                        $prerequisite =
+                            $subjectByCode[
+                                $prerequisiteCode
+                            ] ?? null;
+
+                        if (!$prerequisite) {
+
+                            $groupSatisfied =
+                                false;
+
+                            break;
+                        }
+
+                        $prerequisiteId =
+                            (int)
+                            $prerequisite->subject_id;
+
+                        if (
+                            !isset(
+                                $completionSlots[
+                                    $prerequisiteId
+                                ]
+                            )
+                        ) {
+
+                            $groupSatisfied =
+                                false;
+
+                            break;
+                        }
+
+                        $prerequisiteSlot =
+                            $completionSlots[
+                                $prerequisiteId
+                            ];
+
+                        if (
+                            $prerequisiteSlot['index'] ===
+                            null
+                        ) {
+
+                            $groupSatisfied =
+                                false;
+
+                            break;
+                        }
+
+                        if (
+                            $groupLatestIndex ===
+                            null
+                        ) {
+
+                            $groupLatestIndex =
+                                (int)
+                                $prerequisiteSlot['index'];
+
+                        } else {
+
+                            $groupLatestIndex =
+                                max(
+                                    $groupLatestIndex,
+                                    (int)
+                                    $prerequisiteSlot['index']
+                                );
+                        }
+                    }
+
+                    if (
+                        $groupSatisfied &&
+                        $groupLatestIndex !== null
+                    ) {
+
+                        $alternativeCompletionIndexes[] =
+                            $groupLatestIndex;
+                    }
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | NO COMPLETE PREREQUISITE ALTERNATIVE
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    empty(
+                        $alternativeCompletionIndexes
+                    )
+                ) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | USE THE EARLIEST SATISFIED ALTERNATIVE
+                |--------------------------------------------------------------------------
+                */
+
+                $requiredAfterIndex =
+                    min(
+                        $alternativeCompletionIndexes
+                    );
+
+                $currentIndex =
+                    (int)
+                    $completionSlots[
+                        $subjectId
+                    ]['index'];
+
+                /*
+                |--------------------------------------------------------------------------
+                | MOVE SUBJECT IF ITS CURRENT SLOT IS TOO EARLY
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $currentIndex <=
+                    $requiredAfterIndex
+                ) {
+
+                    $afterYear =
+                        intdiv(
+                            $requiredAfterIndex,
+                            2
+                        );
+
+                    $afterSemester =
+                        (
+                            $requiredAfterIndex % 2
+                        ) + 1;
+
+                    $nextSlot =
+                        $nextOfferingAfter(
+                            $subject,
+                            [
+                                'year' =>
+                                    $afterYear,
+
+                                'semester' =>
+                                    $afterSemester,
+
+                                'index' =>
+                                    $requiredAfterIndex,
+                            ]
+                        );
+
+                    if (
+                        $nextSlot !== null &&
+                        $nextSlot['index'] >
+                        $currentIndex
+                    ) {
+
+                        $completionSlots[
+                            $subjectId
+                        ] = [
+                            'year' =>
+                                $nextSlot['year'],
+
+                            'semester' =>
+                                $nextSlot['semester'],
+
+                            'index' =>
+                                $nextSlot['index'],
+
+                            'fixed' =>
+                                false,
+                        ];
+
+                        $changed = true;
+                    }
+                }
+            }
+
+            if (!$changed) {
+                break;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | DETERMINE NORMAL PROGRAM END
+        |--------------------------------------------------------------------------
+        */
+
+        $normalProgramEndIndex = null;
+
+        foreach (
+            $prospectusSubjects
+            as $subject
+        ) {
+
+            $normalSlot =
+                $subjectNormalSlot(
+                    $subject
+                );
+
+            if ($normalSlot === null) {
+                continue;
+            }
+
+            if (
+                $normalProgramEndIndex ===
+                null
+            ) {
+
+                $normalProgramEndIndex =
+                    $normalSlot['index'];
+
+            } else {
+
+                $normalProgramEndIndex =
+                    max(
+                        $normalProgramEndIndex,
+                        $normalSlot['index']
+                    );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIND FINAL PROJECTED COMPLETION
+        |--------------------------------------------------------------------------
+        */
+
+        $maxProjectedIndex =
+            $normalProgramEndIndex;
+
+        foreach (
+            $completionSlots as $slot
+        ) {
+
+            if (
+                $slot['index'] ===
+                null
+            ) {
+                continue;
+            }
+
+            if (
+                $maxProjectedIndex ===
+                null
+            ) {
+
+                $maxProjectedIndex =
+                    $slot['index'];
+
+            } else {
+
+                $maxProjectedIndex =
+                    max(
+                        $maxProjectedIndex,
+                        (int) $slot['index']
+                    );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | IDENTIFY DELAYED SUBJECTS
+        |--------------------------------------------------------------------------
+        */
+
+        $delayedSubjects = [];
+
+        foreach (
+            $prospectusSubjects
+            as $subject
+        ) {
+
+            $subjectId =
+                (int) $subject->subject_id;
+
+            $normalSlot =
+                $subjectNormalSlot(
+                    $subject
+                );
+
+            $completionSlot =
+                $completionSlots[
+                    $subjectId
+                ] ?? null;
+
+            if (
+                $normalSlot === null ||
+                $completionSlot === null ||
+                $completionSlot['index'] === null
+            ) {
+                continue;
+            }
+
+            if (
+                $completionSlot['index'] <=
+                $normalSlot['index']
+            ) {
+                continue;
+            }
+
+            $requirements =
+                $requirementsBySubjectId[
+                    $subjectId
+                ] ?? [];
+
+            $isFailedSubject =
+                isset(
+                    $failedSubjects[$subjectId]
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | A SUBJECT IS REPORTED AS DELAYED WHEN:
+            |
+            | 1. It is itself unresolved and its retake is later than its
+            |    normal curriculum slot; OR
+            |
+            | 2. Its completion was pushed later because prerequisite timing
+            |    forced it to move.
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $isFailedSubject ||
+                !empty($requirements)
+            ) {
+
+                $delayYears =
+                    max(
+                        1,
+                        (int) ceil(
+                            (
+                                $completionSlot['index']
+                                -
+                                $normalSlot['index']
+                            ) / 2
+                        )
+                    );
+
+                $delayedSubjects[
+                    $subjectId
+                ] = [
+                    'code' =>
+                        trim(
+                            (string)
+                            $subject->subject_code
+                        ),
+
+                    'title' =>
+                        $subject->subject_title,
+
+                    'delay' =>
+                        $delayYears,
+                ];
+            }
+        }
+
+       
+        /*
+        |--------------------------------------------------------------------------
+        | PROJECTED RESIDENCY
+        |--------------------------------------------------------------------------
+        |
+        | The projection is the TOTAL expected residency from admission
+        | through projected completion.
+        |
+        | Normal four-year curriculum:
+        |   4 years
+        |
+        | One-year delay:
+        |   At least 5 years
+        |
+        | Two-year delay:
+        |   At least 6 years
+        |
+        | Delays beyond two years can produce a projection greater than
+        | six years. The six-year limit is a risk threshold, not a cap.
+        |--------------------------------------------------------------------------
+        */
+
+        $elapsedSchoolYears = max(
+            0,
+            $evaluationYear - $admissionYear
+        );
+
+        if ($maxProjectedIndex === null) {
+            $projectedYears = $elapsedSchoolYears;
+        } else {
+            $projectedCompletionYear = intdiv(
+                (int) $maxProjectedIndex,
+                2
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | TOTAL RESIDENCY FROM ADMISSION
+            |--------------------------------------------------------------------------
+            */
+
+            $projectedYears = max(
+                $elapsedSchoolYears,
+                $projectedCompletionYear - $admissionYear
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NORMAL PROGRAM DURATION
+        |--------------------------------------------------------------------------
+        */
+
+        $normalProgramYears = 0;
+
+        if ($normalProgramEndIndex !== null) {
+            $normalProgramYear = intdiv(
+                (int) $normalProgramEndIndex,
+                2
+            );
+
+            $normalProgramYears = max(
+                0,
+                $normalProgramYear - $admissionYear
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET THE LARGEST DELAY
+        |--------------------------------------------------------------------------
+        |
+        | Use the largest delay instead of adding delays for every subject.
+        | This avoids assuming that concurrent subject delays each require
+        | a separate additional school year.
+        |--------------------------------------------------------------------------
+        */
+
+        $maxDelay = 0;
+        $delayedSubjectCodes = [];
+
+        foreach ($delayedSubjects as $delayed) {
+            $maxDelay = max(
+                $maxDelay,
+                (int) $delayed['delay']
+            );
+
+            if ($delayed['code'] !== '') {
+                $delayedSubjectCodes[] = $delayed['code'];
+            }
+        }
+
+        $result['delay_years'] = $maxDelay;
+
+        $result['delayed_subjects'] = array_values(
+            array_unique($delayedSubjectCodes)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL PROJECTED RESIDENCY
+        |--------------------------------------------------------------------------
+        |
+        | Compare all relevant values:
+        | 1. Four-year minimum program duration.
+        | 2. Normal program duration from the prospectus.
+        | 3. Total years calculated from the projected completion year.
+        | 4. Normal program duration plus the largest identified delay.
+        | 5. Years already spent in the program.
+        |
+        | There is deliberately no upper cap on projected residency.
+        |--------------------------------------------------------------------------
+        */
+
+        $result['projected_years'] = max(
+            4,
+            $normalProgramYears,
+            $projectedYears,
+            $normalProgramYears + $maxDelay,
+            $elapsedSchoolYears
+        );
+
+        return $result;
+
     } 
  
+
+    
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE COURSE CODE
+    |--------------------------------------------------------------------------
+    | Converts course codes to uppercase and removes extra whitespace
+    | so prerequisite codes can be matched consistently.
+    |--------------------------------------------------------------------------
+    */
+    private function normalizeCourseCode(mixed $value): string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        return strtoupper(
+            preg_replace('/\s+/', ' ', $value)
+        );
+    }
+
+        
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE YEAR LEVEL
+    |--------------------------------------------------------------------------
+    | Converts year-level values such as:
+    | "1st Year", "First Year", "Year 1", or "1"
+    | into their corresponding integer values.
+    |--------------------------------------------------------------------------
+    */
+    private function normalizeYearLevel(mixed $value): ?int
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = strtolower(
+            preg_replace('/\s+/', ' ', $value)
+        );
+
+        if (
+            preg_match('/\b([1-4])\b/', $normalized, $matches)
+        ) {
+            return (int) $matches[1];
+        }
+
+        if (
+            strpos($normalized, 'first') !== false ||
+            strpos($normalized, '1st') !== false
+        ) {
+            return 1;
+        }
+
+        if (
+            strpos($normalized, 'second') !== false ||
+            strpos($normalized, '2nd') !== false
+        ) {
+            return 2;
+        }
+
+        if (
+            strpos($normalized, 'third') !== false ||
+            strpos($normalized, '3rd') !== false
+        ) {
+            return 3;
+        }
+
+        if (
+            strpos($normalized, 'fourth') !== false ||
+            strpos($normalized, '4th') !== false
+        ) {
+            return 4;
+        }
+
+        return null;
+    }
+
  
-    /* 
-    |-------------------------------------------------------------------------- 
-    | NORMALIZE COURSE CODE 
-    |-------------------------------------------------------------------------- 
-    */ 
-    private function normalizeCourseCode(mixed $value): string 
-    { 
-        return strtoupper( 
-            preg_replace( 
-                '/[^A-Z0-9]/i', 
-                '', 
-                trim((string) $value) 
-            ) 
-        ); 
-    } 
- 
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | NORMALIZE YEAR LEVEL 
-    |-------------------------------------------------------------------------- 
-    | 
-    | Supports values such as: 
-    |   1 
-    |   1st 
-    |   1st Year 
-    |   First Year 
-    |-------------------------------------------------------------------------- 
-    */ 
-    private function normalizeYearLevel(mixed $value): ?int 
-    { 
-        $value = trim((string) $value); 
- 
-        if ($value === '') { 
-            return null; 
-        } 
- 
-        if (preg_match('/\b([1-9][0-9]*)\b/', $value, $matches)) { 
-            return (int) $matches[1]; 
-        } 
- 
-        $normalized = strtolower($value); 
- 
-        $map = [ 
-            'first' => 1, 
-            'first year' => 1, 
-            'second' => 2, 
-            'second year' => 2, 
-            'third' => 3, 
-            'third year' => 3, 
-            'fourth' => 4, 
-            'fourth year' => 4, 
-        ]; 
- 
-        return $map[$normalized] ?? null; 
-    } 
- 
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | NORMALIZE SEMESTER NUMBER 
-    |-------------------------------------------------------------------------- 
-    | 
-    | Supports numeric and common textual semester values. 
-    |-------------------------------------------------------------------------- 
-    */ 
-    private function normalizeSemesterNumber(mixed $value): ?int 
-    { 
-        $value = trim((string) $value); 
- 
-        if ($value === '') { 
-            return null; 
-        } 
- 
-        if (preg_match('/\b([12])\b/', $value, $matches)) { 
-            return (int) $matches[1]; 
-        } 
- 
-        $normalized = strtolower( 
-            preg_replace('/\s+/', ' ', $value) 
-        ); 
- 
-        if ( 
-            strpos($normalized, 'first') !== false || 
-            strpos($normalized, '1st') !== false 
-        ) { 
-            return 1; 
-        } 
- 
-        if ( 
-            strpos($normalized, 'second') !== false || 
-            strpos($normalized, '2nd') !== false 
-        ) { 
-            return 2; 
-        } 
- 
-        return null; 
-    } 
- 
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | GET SEMESTER SLOT 
-    |-------------------------------------------------------------------------- 
-    | 
-    | Returns a comparable academic slot: 
-    | 
-    |   year     = ending school year 
-    |   semester = 1 or 2 
-    |   index    = year * 2 + semester offset 
-    | 
-    |-------------------------------------------------------------------------- 
-    */ 
-    private function getSemesterSlot(?Semester $semester): array 
-    { 
-        $result = [ 
-            'year' => null, 
-            'semester' => null, 
-            'index' => null, 
-        ]; 
- 
-        if (!$semester) { 
-            return $result; 
-        } 
- 
-        $schoolYear = trim( 
-            (string) ($semester->school_year ?? '') 
-        ); 
- 
-        if (preg_match( 
-            '/((?:19|20)\d{2})\s*[-\/]\s*((?:19|20)\d{2})/', 
-            $schoolYear, 
-            $matches 
-        )) { 
-            $result['year'] = (int) $matches[2]; 
-        } elseif (preg_match( 
-            '/((?:19|20)\d{2})/', 
-            $schoolYear, 
-            $matches 
-        )) { 
-            $result['year'] = (int) $matches[1]; 
-        } 
- 
-        $result['semester'] = 
-            $this->normalizeSemesterNumber( 
-                $semester->semester_name 
-                    ?? $semester->name 
-                    ?? $semester->semester 
-                    ?? null 
-            ); 
- 
-        if ( 
-            $result['year'] !== null && 
-            $result['semester'] !== null 
-        ) { 
-            $result['index'] = 
-                ($result['year'] * 2) + 
-                ($result['semester'] - 1); 
-        } 
- 
-        return $result; 
-    } 
- 
- 
+        
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE SEMESTER NUMBER
+    |--------------------------------------------------------------------------
+    */
+    private function normalizeSemesterNumber(mixed $value): ?int
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/\b([12])\b/', $value, $matches)) {
+            return (int) $matches[1];
+        }
+
+        $normalized = strtolower(
+            preg_replace('/\s+/', ' ', $value)
+        );
+
+        if (
+            strpos($normalized, 'first') !== false ||
+            strpos($normalized, '1st') !== false
+        ) {
+            return 1;
+        }
+
+        if (
+            strpos($normalized, 'second') !== false ||
+            strpos($normalized, '2nd') !== false
+        ) {
+            return 2;
+        }
+
+        return null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET SEMESTER SLOT
+    |--------------------------------------------------------------------------
+    |
+    | Returns a comparable academic slot:
+    | year     = ending school year
+    | semester = 1 or 2
+    | index    = year * 2 + semester offset
+    |
+    */
+    private function getSemesterSlot(?Semester $semester): array
+    {
+        $result = [
+            'year' => null,
+            'semester' => null,
+            'index' => null,
+        ];
+
+        if (!$semester) {
+            return $result;
+        }
+
+        $schoolYear = trim(
+            (string) ($semester->school_year ?? '')
+        );
+
+        if (
+            preg_match(
+                '/((?:19|20)\d{2})\s*[-\/]\s*((?:19|20)\d{2})/',
+                $schoolYear,
+                $matches
+            )
+        ) {
+            $result['year'] = (int) $matches[2];
+        } elseif (
+            preg_match(
+                '/((?:19|20)\d{2})/',
+                $schoolYear,
+                $matches
+            )
+        ) {
+            $result['year'] = (int) $matches[1];
+        }
+
+        $result['semester'] = $this->normalizeSemesterNumber(
+            $semester->semester_name
+                ?? $semester->name
+                ?? $semester->semester
+                ?? null
+        );
+
+        if (
+            $result['year'] !== null &&
+            $result['semester'] !== null
+        ) {
+            $result['index'] =
+                ($result['year'] * 2) +
+                ($result['semester'] - 1);
+        }
+
+        return $result;
+    }
+
+
+
+
     /* 
     |-------------------------------------------------------------------------- 
     | VALIDATE PREREQUISITE / RETAKE ENROLLMENT 
@@ -3818,93 +4557,106 @@ public function index(Request $request)
     } 
  
  
-  public function priorityAlert(int $id) 
-{ 
-    $student = Student::with([ 
-        'statusHistory.semester' 
-    ])->findOrFail($id); 
  
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | GET COMPLETE EVALUATION HISTORY 
-    |-------------------------------------------------------------------------- 
-    */ 
- 
-    $evaluations = $student->statusHistory 
-        ->sortByDesc(function ($history) { 
- 
-            return [ 
-                (int) $history->semester_id, 
-                (int) $history->status_id 
-            ]; 
- 
-        }) 
-        ->values(); 
- 
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | RECENT AND PREVIOUS EVALUATION 
-    |-------------------------------------------------------------------------- 
-    */ 
- 
-    $recentEvaluation = 
-        $evaluations->first(); 
- 
-    $previousEvaluation = 
-        $evaluations->skip(1)->first(); 
- 
- 
-    /* 
-    |-------------------------------------------------------------------------- 
-    | CALCULATE PRIORITY ALERT 
-    |-------------------------------------------------------------------------- 
-    | 
-    | Priority Alert exists ONLY when the student has a previous 
-    | evaluation and the current failure percentage is equal to 
-    | or greater than the previous failure percentage. 
-    | 
-    */ 
- 
-    $priorityAlert = false; 
- 
- 
-    if ( 
-        $recentEvaluation && 
-        $previousEvaluation 
-    ) { 
- 
-        $recentFailure = 
-            (float) $recentEvaluation->failure_percentage; 
- 
-        $previousFailure = 
-            (float) $previousEvaluation->failure_percentage; 
- 
- 
-        if ( 
-            $recentFailure >= 
-            $previousFailure 
-        ) { 
- 
-            $priorityAlert = true; 
- 
-        } 
- 
-    } 
- 
- 
-    return view( 
-        'students.priority-alert', 
-        compact( 
-            'student', 
-            'recentEvaluation', 
-            'previousEvaluation', 
-            'evaluations', 
-            'priorityAlert' 
-        ) 
-    ); 
-} 
+public function priorityAlert(int $id)
+{
+    $student = Student::with([
+        'statusHistory.semester'
+    ])->findOrFail($id);
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET COMPLETE EVALUATION HISTORY
+    |--------------------------------------------------------------------------
+    | Group by semester and use the most recently saved status record
+    | for each semester. Order by actual evaluation timestamp.
+    |--------------------------------------------------------------------------
+    */
+
+    $evaluations = $student->statusHistory
+        ->filter(function ($history) {
+            return $history->semester_id !== null;
+        })
+        ->groupBy('semester_id')
+        ->map(function ($semesterEvaluations) {
+
+            return $semesterEvaluations
+                ->sort(function ($a, $b) {
+
+                    $dateComparison = strcmp(
+                        (string) $b->created_at,
+                        (string) $a->created_at
+                    );
+
+                    if ($dateComparison !== 0) {
+                        return $dateComparison;
+                    }
+
+                    return (int) $b->status_id
+                        <=> (int) $a->status_id;
+                })
+                ->first();
+
+        })
+        ->sort(function ($a, $b) {
+
+            $dateComparison = strcmp(
+                (string) $b->created_at,
+                (string) $a->created_at
+            );
+
+            if ($dateComparison !== 0) {
+                return $dateComparison;
+            }
+
+            return (int) $b->status_id
+                <=> (int) $a->status_id;
+        })
+        ->values();
+
+    /*
+    |--------------------------------------------------------------------------
+    | RECENT AND PREVIOUS EVALUATION
+    |--------------------------------------------------------------------------
+    */
+
+    $recentEvaluation = $evaluations->first();
+
+    $previousEvaluation = $evaluations->skip(1)->first();
+
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULATE PRIORITY ALERT
+    |--------------------------------------------------------------------------
+    */
+
+    $priorityAlert = false;
+
+    if ($recentEvaluation && $previousEvaluation) {
+
+        $recentFailure =
+            (float) $recentEvaluation->failure_percentage;
+
+        $previousFailure =
+            (float) $previousEvaluation->failure_percentage;
+
+        if ($recentFailure >= $previousFailure) {
+            $priorityAlert = true;
+        }
+    }
+
+    return view(
+        'students.priority-alert',
+        compact(
+            'student',
+            'recentEvaluation',
+            'previousEvaluation',
+            'evaluations',
+            'priorityAlert'
+        )
+    );
+}
+
  
  
     /*
@@ -4065,28 +4817,42 @@ public function index(Request $request)
         | Normalize route value 
         */ 
  
-        if ($status === 'For Shifting Out') { 
- 
-            $statusToFind = 
-                'Shifting Out'; 
-        } 
- 
- 
-        $students = 
-            Student::with('latestStatus') 
-                ->orderBy('last_name') 
-                ->orderBy('first_name') 
-                ->get() 
-                ->filter(function ($student) use ( 
-                    $statusToFind 
-                ) { 
- 
-                    return optional( 
-                        $student->latestStatus 
-                    )->academic_status === 
-                        $statusToFind; 
- 
-                }) 
+        if ($status === 'For Shifting Out') {
+
+            $statusToFind =
+                'Shifting Out';
+        } elseif ($status === 'Regular') {
+
+            // Treat the old status name as the renamed status.
+            $statusToFind =
+                'Below Treshold';
+        }
+
+
+        $students =
+            Student::with('latestStatus')
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get()
+                ->filter(function ($student) use (
+                    $statusToFind
+                ) {
+
+                    $studentStatus = optional(
+                        $student->latestStatus
+                    )->academic_status;
+
+                    // Include legacy Regular records in the renamed status list.
+                    if (
+                        $statusToFind === 'Below Treshold' &&
+                        $studentStatus === 'Regular'
+                    ) {
+                        return true;
+                    }
+
+                    return $studentStatus === $statusToFind;
+
+                })
                 ->values(); 
  
  

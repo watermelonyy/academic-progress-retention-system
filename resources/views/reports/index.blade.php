@@ -724,8 +724,8 @@
                         -- All Academic Statuses --
                     </option>
 
-                    <option value="Regular">
-                        Regular
+                    <option value="Below Treshold">
+                        Below Treshold
                     </option>
 
                     <option value="Academic Warning">

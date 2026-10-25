@@ -91,6 +91,20 @@ Route::middleware(['checklogin', 'autologout'])->group(function () {
     )->name('reports.generate');
 
 
+    
+/*
+|--------------------------------------------------------------------------
+| STUDENT RESIDENCY PREDICTION
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/students/{id}/residency-prediction',
+    [StudentController::class, 'residencyPrediction']
+)->name('students.residencyPrediction');
+
+
+
     /*
     |--------------------------------------------------------------------------
     | SCHOOL YEAR MANAGEMENT
@@ -147,18 +161,6 @@ Route::middleware(['checklogin', 'autologout'])->group(function () {
         '/students/{id}/backlog/{subjectId}/mark-passed',
         [StudentController::class, 'markBacklogAsPassed']
     )->name('students.backlog.markPassed');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | STUDENT HISTORY
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/students/{id}/history',
-        [StudentController::class, 'history']
-    )->name('students.history');
 
 
     /*

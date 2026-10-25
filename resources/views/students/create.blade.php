@@ -53,24 +53,18 @@
     position: absolute;
     top: 15px;
     right: 18px;
-
     width: 38px;
     height: 38px;
-
     border: none;
     border-radius: 50%;
-
     background: rgba(255, 255, 255, 0.18);
     color: white;
-
     font-size: 24px;
     font-weight: bold;
     line-height: 1;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     cursor: pointer;
     transition: 0.2s;
 }
@@ -94,18 +88,13 @@
 .step-button {
     flex: 1;
     padding: 16px 20px;
-
     border: none;
     background: transparent;
-
     font-weight: 700;
     font-size: 15px;
-
     color: #6c757d;
-
     cursor: pointer;
     transition: 0.2s;
-
     border-bottom: 4px solid transparent;
 }
 
@@ -246,7 +235,7 @@
 .semester-option input {
     margin-right: 9px;
     accent-color: #198754;
-} 
+}
 
 .semester-option:has(input:checked) {
     border-color: #198754;
@@ -304,14 +293,11 @@
 .subject-number {
     width: 38px;
     height: 38px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     background: #f1f3f5;
     border-radius: 50%;
-
     font-weight: 700;
     color: #495057;
 }
@@ -319,16 +305,12 @@
 .remove-subject-btn {
     width: 38px;
     height: 38px;
-
     border: none;
     border-radius: 7px;
-
     background: #dc3545;
     color: white;
-
     font-size: 18px;
     font-weight: bold;
-
     cursor: pointer;
     transition: 0.2s;
 }
@@ -345,13 +327,10 @@
     border: 1px solid #b7dfc8;
     background: #eaf7ef;
     color: #198754;
-
     padding: 10px 20px;
     border-radius: 8px;
-
     font-weight: 700;
     cursor: pointer;
-
     transition: 0.2s;
 }
 
@@ -389,8 +368,7 @@
 
 .keyboard-field.keyboard-focus {
     border-color: #198754 !important;
-    box-shadow:
-        0 0 0 0.18rem rgba(25, 135, 84, 0.14) !important;
+    box-shadow: 0 0 0 0.18rem rgba(25, 135, 84, 0.14) !important;
     background: #fbfffc;
 }
 
@@ -492,9 +470,7 @@ input[type=number] {
 
 <div class="create-card">
 
-    {{-- =====================================================
-         HEADER
-    ====================================================== --}}
+    {{-- HEADER --}}
 
     <div class="create-header">
 
@@ -503,7 +479,6 @@ input[type=number] {
             ADD NEW STUDENT
         </h3>
 
-        {{-- CLOSE / CANCEL BUTTON --}}
         <button
             type="button"
             class="close-create-btn"
@@ -517,9 +492,7 @@ input[type=number] {
     </div>
 
 
-    {{-- =====================================================
-         STEP NAVIGATION
-    ====================================================== --}}
+    {{-- STEP NAVIGATION --}}
 
     <div class="step-navigation">
 
@@ -546,9 +519,7 @@ input[type=number] {
     </div>
 
 
-    {{-- =====================================================
-         BODY
-    ====================================================== --}}
+    {{-- BODY --}}
 
     <div class="create-body">
 
@@ -564,9 +535,7 @@ input[type=number] {
                 <ul class="mb-0 mt-2">
 
                     @foreach($errors->all() as $error)
-
                         <li>{{ $error }}</li>
-
                     @endforeach
 
                 </ul>
@@ -591,29 +560,20 @@ input[type=number] {
             @csrf
 
 
-            {{-- =================================================
-                 STEP 1 - STUDENT INFORMATION
-            ================================================== --}}
+            {{-- STEP 1 - STUDENT INFORMATION --}}
 
-            <div
-                id="step1"
-                class="step-content active"
-            >
+            <div id="step1" class="step-content active">
 
                 <div class="section-title">
                     <i class="fa fa-user"></i>
                     STUDENT INFORMATION
                 </div>
 
-
                 <div class="row g-3">
 
-                    {{-- STUDENT NUMBER --}}
                     <div class="col-md-6">
-
                         <label class="form-label">
-                            STUDENT NUMBER
-                            <span class="required">*</span>
+                            STUDENT NUMBER <span class="required">*</span>
                         </label>
 
                         <input
@@ -630,16 +590,11 @@ input[type=number] {
                             data-key-row="student-info"
                             data-key-col="1"
                         >
-
                     </div>
 
-
-                    {{-- FIRST NAME --}}
                     <div class="col-md-6">
-
                         <label class="form-label">
-                            FIRST NAME
-                            <span class="required">*</span>
+                            FIRST NAME <span class="required">*</span>
                         </label>
 
                         <input
@@ -653,16 +608,10 @@ input[type=number] {
                             data-key-row="student-info"
                             data-key-col="2"
                         >
-
                     </div>
 
-
-                    {{-- MIDDLE NAME --}}
                     <div class="col-md-6">
-
-                        <label class="form-label">
-                            MIDDLE NAME
-                        </label>
+                        <label class="form-label">MIDDLE NAME</label>
 
                         <input
                             type="text"
@@ -674,16 +623,11 @@ input[type=number] {
                             data-key-row="student-info"
                             data-key-col="3"
                         >
-
                     </div>
 
-
-                    {{-- LAST NAME --}}
                     <div class="col-md-6">
-
                         <label class="form-label">
-                            LAST NAME
-                            <span class="required">*</span>
+                            LAST NAME <span class="required">*</span>
                         </label>
 
                         <input
@@ -697,16 +641,11 @@ input[type=number] {
                             data-key-row="student-info"
                             data-key-col="4"
                         >
-
                     </div>
 
-
-                    {{-- ADMISSION YEAR --}}
                     <div class="col-md-6">
-
                         <label class="form-label">
-                            ADMISSION YEAR
-                            <span class="required">*</span>
+                            ADMISSION YEAR <span class="required">*</span>
                         </label>
 
                         <input
@@ -723,16 +662,11 @@ input[type=number] {
                             data-key-row="student-info"
                             data-key-col="5"
                         >
-
                     </div>
 
-
-                    {{-- CURRENT YEAR LEVEL --}}
                     <div class="col-md-6">
-
                         <label class="form-label">
-                            CURRENT YEAR LEVEL
-                            <span class="required">*</span>
+                            CURRENT YEAR LEVEL <span class="required">*</span>
                         </label>
 
                         <select
@@ -743,49 +677,29 @@ input[type=number] {
                             data-key-row="student-info"
                             data-key-col="6"
                         >
+                            <option value="">SELECT YEAR LEVEL</option>
 
-                            <option value="">
-                                SELECT YEAR LEVEL
-                            </option>
-
-                            <option
-                                value="1"
-                                {{ old('current_year_level') == '1' ? 'selected' : '' }}
-                            >
+                            <option value="1" {{ old('current_year_level') == '1' ? 'selected' : '' }}>
                                 1ST YEAR
                             </option>
 
-                            <option
-                                value="2"
-                                {{ old('current_year_level') == '2' ? 'selected' : '' }}
-                            >
+                            <option value="2" {{ old('current_year_level') == '2' ? 'selected' : '' }}>
                                 2ND YEAR
                             </option>
 
-                            <option
-                                value="3"
-                                {{ old('current_year_level') == '3' ? 'selected' : '' }}
-                            >
+                            <option value="3" {{ old('current_year_level') == '3' ? 'selected' : '' }}>
                                 3RD YEAR
                             </option>
 
-                            <option
-                                value="4"
-                                {{ old('current_year_level') == '4' ? 'selected' : '' }}
-                            >
+                            <option value="4" {{ old('current_year_level') == '4' ? 'selected' : '' }}>
                                 4TH YEAR
                             </option>
-
                         </select>
-
                     </div>
 
                 </div>
 
-
-                {{-- STEP 1 BUTTON --}}
                 <div class="form-buttons">
-
                     <div></div>
 
                     <button
@@ -795,69 +709,39 @@ input[type=number] {
                     >
                         NEXT
                     </button>
-
                 </div>
 
             </div>
 
 
-            {{-- =================================================
-                 STEP 2 - ACADEMIC GRADES
-            ================================================== --}}
+            {{-- STEP 2 - ACADEMIC GRADES --}}
 
-            <div
-                id="step2"
-                class="step-content"
-            >
+            <div id="step2" class="step-content">
 
                 <div class="section-title">
                     <i class="fa fa-book"></i>
                     ACADEMIC GRADES
                 </div>
 
-
                 <div class="academic-period-row">
 
                     {{-- SCHOOL YEAR --}}
+
                     <div class="mb-0">
 
                         <label class="form-label">
-                            SCHOOL YEAR
-                            <span class="required">*</span>
+                            SCHOOL YEAR <span class="required">*</span>
                         </label>
 
                         @php
-
-                            /*
-                             * IMPORTANT:
-                             * School years are arranged from PAST TO FUTURE.
-                             *
-                             * Example:
-                             * 2021-2022
-                             * 2022-2023
-                             * 2023-2024
-                             * 2024-2025
-                             * 2025-2026
-                             * 2026-2027
-                             *
-                             * This replaces the previous "nearest to current year"
-                             * sorting.
-                             */
                             $databaseSchoolYears = $semesters
                                 ->pluck('school_year')
                                 ->filter()
                                 ->unique()
                                 ->sortBy(function ($schoolYear) {
-
-                                    return (int) substr(
-                                        trim($schoolYear),
-                                        0,
-                                        4
-                                    );
-
+                                    return (int) substr(trim($schoolYear), 0, 4);
                                 })
                                 ->values();
-
                         @endphp
 
                         <select
@@ -869,9 +753,7 @@ input[type=number] {
                             data-key-col="1"
                         >
 
-                            <option value="">
-                                SELECT SCHOOL YEAR
-                            </option>
+                            <option value="">SELECT SCHOOL YEAR</option>
 
                             @foreach($databaseSchoolYears as $schoolYear)
 
@@ -890,11 +772,11 @@ input[type=number] {
 
 
                     {{-- TOTAL SUBJECTS --}}
+
                     <div class="total-subjects-field mb-0">
 
                         <label class="form-label">
-                            TOTAL SUBJECTS
-                            <span class="required">*</span>
+                            TOTAL SUBJECTS <span class="required">*</span>
                         </label>
 
                         <input
@@ -919,22 +801,14 @@ input[type=number] {
 
 
                 {{-- SEMESTER --}}
-                <div
-                    id="semesterContainer"
-                    class="semester-container"
-                >
+
+                <div id="semesterContainer" class="semester-container">
 
                     <div class="semester-title">
-                        SELECT SEMESTER
-                        <span class="required">*</span>
+                        SELECT SEMESTER <span class="required">*</span>
                     </div>
 
-                    <div
-                        id="semesterOptions"
-                        class="semester-options"
-                    >
-
-                    </div>
+                    <div id="semesterOptions" class="semester-options"></div>
 
                     <input
                         type="hidden"
@@ -951,56 +825,34 @@ input[type=number] {
                 <div class="grades-section">
 
                     <div class="grades-header">
-
                         <h5>
                             <i class="fa fa-list"></i>
                             COURSE CODES AND GRADES
                         </h5>
-
                     </div>
-
 
                     <div class="grade-column-header">
-
                         <div></div>
-
                         <div>COURSE CODE</div>
-
                         <div>FAILED GRADE</div>
-
                         <div>ACTION</div>
-
                     </div>
-
 
                     <div id="subjectContainer">
 
                         @php
+                            $oldSubjectCodes = old('subject_code', ['']);
+                            $oldGrades = old('grade', ['']);
 
-                            $oldSubjectCodes =
-                                old(
-                                    'subject_code',
-                                    ['']
-                                );
-
-                            $oldGrades =
-                                old(
-                                    'grade',
-                                    ['']
-                                );
-
-                            $subjectRowCount =
-                                max(
-                                    count($oldSubjectCodes),
-                                    count($oldGrades)
-                                );
+                            $subjectRowCount = max(
+                                count($oldSubjectCodes),
+                                count($oldGrades)
+                            );
 
                             if ($subjectRowCount < 1) {
                                 $subjectRowCount = 1;
                             }
-
                         @endphp
-
 
                         @for($i = 0; $i < $subjectRowCount; $i++)
 
@@ -1022,20 +874,14 @@ input[type=number] {
                                         data-key-type="subject-code"
                                     >
 
-                                    <div
-                                        class="course-code-warning {{ $errors->has('subject_code.' . $i) ? 'show' : '' }}"
-                                    >
+                                    <div class="course-code-warning {{ $errors->has('subject_code.' . $i) ? 'show' : '' }}">
 
                                         <i class="fa fa-exclamation-triangle"></i>
 
                                         @if($errors->has('subject_code.' . $i))
-
                                             {{ $errors->first('subject_code.' . $i) }}
-
                                         @else
-
                                             INVALID COURSE CODE. PLEASE CHECK THE COURSE CODE.
-
                                         @endif
 
                                     </div>
@@ -1061,7 +907,6 @@ input[type=number] {
                                 <div>
 
                                     @if($i > 0)
-
                                         <button
                                             type="button"
                                             class="remove-subject-btn"
@@ -1070,7 +915,6 @@ input[type=number] {
                                         >
                                             &times;
                                         </button>
-
                                     @endif
 
                                 </div>
@@ -1080,7 +924,6 @@ input[type=number] {
                         @endfor
 
                     </div>
-
 
                     <div class="add-subject-container">
 
@@ -1110,13 +953,9 @@ input[type=number] {
                         Previous
                     </button>
 
-
                     <div class="right-buttons">
 
-                        <button
-                            type="submit"
-                            class="btn btn-success"
-                        >
+                        <button type="submit" class="btn btn-success">
                             <i class="fa fa-save"></i>
                             SAVE STUDENT
                         </button>
@@ -1148,21 +987,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function enableUppercase() {
 
         const uppercaseFields =
-            document.querySelectorAll(
-                '.uppercase-input'
-            );
+            document.querySelectorAll('.uppercase-input');
 
         uppercaseFields.forEach(function (field) {
 
-            field.addEventListener(
-                'input',
-                function () {
-
-                    this.value =
-                        this.value.toUpperCase();
-
-                }
-            );
+            field.addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+            });
 
         });
 
@@ -1175,22 +1006,17 @@ document.addEventListener('DOMContentLoaded', function () {
        STUDENT NUMBER - NUMBERS ONLY - MAXIMUM 10 DIGITS
     ========================================================= */
 
-    const studentNumber =
-        document.getElementById('student_no');
+    const studentNumber = document.getElementById('student_no');
 
     if (studentNumber) {
 
-        studentNumber.addEventListener(
-            'input',
-            function () {
+        studentNumber.addEventListener('input', function () {
 
-                this.value =
-                    this.value
-                        .replace(/\D/g, '')
-                        .slice(0, 10);
+            this.value = this.value
+                .replace(/\D/g, '')
+                .slice(0, 10);
 
-            }
-        );
+        });
 
     }
 
@@ -1199,22 +1025,17 @@ document.addEventListener('DOMContentLoaded', function () {
        ADMISSION YEAR - NUMBERS ONLY - EXACTLY 4 DIGITS
     ========================================================= */
 
-    const admissionYear =
-        document.getElementById('admission_year');
+    const admissionYear = document.getElementById('admission_year');
 
     if (admissionYear) {
 
-        admissionYear.addEventListener(
-            'input',
-            function () {
+        admissionYear.addEventListener('input', function () {
 
-                this.value =
-                    this.value
-                        .replace(/\D/g, '')
-                        .slice(0, 4);
+            this.value = this.value
+                .replace(/\D/g, '')
+                .slice(0, 4);
 
-            }
-        );
+        });
 
     }
 
@@ -1231,24 +1052,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     nameFields.forEach(function (fieldId) {
 
-        const field =
-            document.getElementById(fieldId);
+        const field = document.getElementById(fieldId);
 
         if (!field) {
             return;
         }
 
-        field.addEventListener(
-            'input',
-            function () {
+        field.addEventListener('input', function () {
 
-                this.value =
-                    this.value
-                        .replace(/[0-9]/g, '')
-                        .toUpperCase();
+            this.value = this.value
+                .replace(/[0-9]/g, '')
+                .toUpperCase();
 
-            }
-        );
+        });
 
     });
 
@@ -1267,10 +1083,62 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('semesterId');
 
 
+    /*
+     * FIX:
+     * Always display 1ST SEMESTER before 2ND SEMESTER.
+     *
+     * The database may return semesters in any order.
+     * Sort the semester records before creating the radio buttons.
+     */
+
+    const semesterRecords = [
+
+        @foreach($semesters as $semester)
+
+            {
+                id: @json((string) $semester->semester_id),
+                schoolYear: @json((string) $semester->school_year),
+                name: @json(strtoupper(trim($semester->semester_name)))
+            },
+
+        @endforeach
+
+    ];
+
+
+    function getSemesterOrder(name) {
+
+        const normalizedName = name
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, '');
+
+        if (
+            normalizedName === '1STSEMESTER' ||
+            normalizedName === 'FIRSTSEMESTER' ||
+            normalizedName === 'SEMESTER1' ||
+            normalizedName === 'SEM1' ||
+            normalizedName === '1'
+        ) {
+            return 1;
+        }
+
+        if (
+            normalizedName === '2NDSEMESTER' ||
+            normalizedName === 'SECONDSEMESTER' ||
+            normalizedName === 'SEMESTER2' ||
+            normalizedName === 'SEM2' ||
+            normalizedName === '2'
+        ) {
+            return 2;
+        }
+
+        return 99;
+    }
+
+
     function loadSemesters(selectedSemester = '') {
 
-        const selectedYear =
-            schoolYearSelect.value;
+        const selectedYear = schoolYearSelect.value;
 
         semesterOptions.innerHTML = '';
         semesterId.value = '';
@@ -1280,72 +1148,76 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
 
-        @foreach($semesters as $semester)
+        /*
+         * Filter by selected school year, then sort:
+         * 1ST SEMESTER
+         * 2ND SEMESTER
+         * Any other semester names follow afterward.
+         */
 
-            if (
-                selectedYear ===
-                "{{ $semester->school_year }}"
-            ) {
+        const filteredSemesters = semesterRecords
+            .filter(function (semester) {
+                return semester.schoolYear === selectedYear;
+            })
+            .sort(function (a, b) {
 
-                const label =
-                    document.createElement('label');
+                const orderDifference =
+                    getSemesterOrder(a.name) -
+                    getSemesterOrder(b.name);
 
-                label.className =
-                    'semester-option';
-
-                label.innerHTML = `
-                    <input
-                        type="radio"
-                        name="semester_choice"
-                        value="{{ $semester->semester_id }}"
-                        class="semester-radio keyboard-field"
-                        data-key-row="semester"
-                        data-key-col="1"
-                    >
-                    {{ strtoupper($semester->semester_name) }}
-                `;
-
-                semesterOptions.appendChild(
-                    label
-                );
-
-            }
-
-        @endforeach
-
-
-        document.querySelectorAll(
-            '.semester-radio'
-        ).forEach(function (radio) {
-
-            radio.addEventListener(
-                'change',
-                function () {
-
-                    semesterId.value =
-                        this.value;
-
+                if (orderDifference !== 0) {
+                    return orderDifference;
                 }
+
+                return a.name.localeCompare(b.name);
+
+            });
+
+
+        filteredSemesters.forEach(function (semester) {
+
+            const label = document.createElement('label');
+
+            label.className = 'semester-option';
+
+            const radio = document.createElement('input');
+
+            radio.type = 'radio';
+            radio.name = 'semester_choice';
+            radio.value = semester.id;
+            radio.className = 'semester-radio keyboard-field';
+            radio.setAttribute('data-key-row', 'semester');
+            radio.setAttribute('data-key-col', '1');
+
+            const text = document.createTextNode(
+                ' ' + semester.name
             );
+
+            label.appendChild(radio);
+            label.appendChild(text);
+
+            semesterOptions.appendChild(label);
+
+
+            radio.addEventListener('change', function () {
+                semesterId.value = this.value;
+            });
 
         });
 
 
         if (selectedSemester) {
 
-            const radio =
-                document.querySelector(
-                    '.semester-radio[value="' +
-                    selectedSemester +
-                    '"]'
-                );
+            const radio = Array.from(
+                document.querySelectorAll('.semester-radio')
+            ).find(function (item) {
+                return item.value === String(selectedSemester);
+            });
 
             if (radio) {
 
                 radio.checked = true;
-
-                semesterId.value =
-                    selectedSemester;
+                semesterId.value = radio.value;
 
             }
 
@@ -1354,22 +1226,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    schoolYearSelect.addEventListener(
-        'change',
-        function () {
-
-            loadSemesters();
-
-        }
-    );
+    schoolYearSelect.addEventListener('change', function () {
+        loadSemesters();
+    });
 
 
     @if(old('school_year'))
-
-        loadSemesters(
-            "{{ old('semester_id') }}"
-        );
-
+        loadSemesters(@json((string) old('semester_id', '')));
     @endif
 
 
@@ -1387,22 +1250,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateSubjectNumbers() {
 
         const rows =
-            subjectContainer.querySelectorAll(
-                '.subject-row'
-            );
+            subjectContainer.querySelectorAll('.subject-row');
 
         rows.forEach(function (row, index) {
 
             const number =
-                row.querySelector(
-                    '.subject-number'
-                );
+                row.querySelector('.subject-number');
 
             if (number) {
-
-                number.textContent =
-                    index + 1;
-
+                number.textContent = index + 1;
             }
 
         });
@@ -1416,35 +1272,22 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        field.addEventListener(
-            'input',
-            function () {
+        field.addEventListener('input', function () {
 
-                this.value =
-                    this.value.toUpperCase();
+            this.value = this.value.toUpperCase();
 
-                const parent =
-                    this.parentElement;
+            const parent = this.parentElement;
 
-                const warning =
-                    parent.querySelector(
-                        '.course-code-warning'
-                    );
+            const warning =
+                parent.querySelector('.course-code-warning');
 
-                if (warning) {
-
-                    warning.classList.remove(
-                        'show'
-                    );
-
-                }
-
-                this.classList.remove(
-                    'is-invalid'
-                );
-
+            if (warning) {
+                warning.classList.remove('show');
             }
-        );
+
+            this.classList.remove('is-invalid');
+
+        });
 
     }
 
@@ -1452,25 +1295,19 @@ document.addEventListener('DOMContentLoaded', function () {
     function attachRemoveButton(row) {
 
         const removeButton =
-            row.querySelector(
-                '.remove-subject-btn'
-            );
+            row.querySelector('.remove-subject-btn');
 
         if (!removeButton) {
             return;
         }
 
+        removeButton.addEventListener('click', function () {
 
-        removeButton.addEventListener(
-            'click',
-            function () {
+            row.remove();
 
-                row.remove();
+            updateSubjectNumbers();
 
-                updateSubjectNumbers();
-
-            }
-        );
+        });
 
     }
 
@@ -1480,17 +1317,11 @@ document.addEventListener('DOMContentLoaded', function () {
         .forEach(function (row) {
 
             const subjectCode =
-                row.querySelector(
-                    '.subject-code'
-                );
+                row.querySelector('.subject-code');
 
-            attachUppercaseToField(
-                subjectCode
-            );
+            attachUppercaseToField(subjectCode);
 
-            attachRemoveButton(
-                row
-            );
+            attachRemoveButton(row);
 
         });
 
@@ -1499,397 +1330,316 @@ document.addEventListener('DOMContentLoaded', function () {
        ADD SUBJECT
     ========================================================= */
 
-    addSubjectButton.addEventListener(
-        'click',
-        function () {
+    addSubjectButton.addEventListener('click', function () {
 
-            const rows =
-                subjectContainer.querySelectorAll(
-                    '.subject-row'
-                );
+        const rows =
+            subjectContainer.querySelectorAll('.subject-row');
 
-            const rowNumber =
-                rows.length + 1;
+        const rowNumber = rows.length + 1;
 
+        const newRow = document.createElement('div');
 
-            const newRow =
-                document.createElement('div');
+        newRow.className = 'subject-row';
 
-            newRow.className =
-                'subject-row';
+        newRow.innerHTML = `
 
+            <div class="subject-number">
+                ${rowNumber}
+            </div>
 
-            newRow.innerHTML = `
+            <div>
 
-                <div class="subject-number">
-                    ${rowNumber}
-                </div>
+                <input
+                    type="text"
+                    name="subject_code[]"
+                    class="form-control subject-code uppercase-input keyboard-field"
+                    placeholder="ENTER COURSE CODE"
+                    autocomplete="off"
+                    data-key-type="subject-code"
+                >
 
-                <div>
+                <div class="course-code-warning">
 
-                    <input
-                        type="text"
-                        name="subject_code[]"
-                        class="form-control subject-code uppercase-input keyboard-field"
-                        placeholder="ENTER COURSE CODE"
-                        autocomplete="off"
-                        data-key-type="subject-code"
-                    >
+                    <i class="fa fa-exclamation-triangle"></i>
 
-                    <div class="course-code-warning">
-
-                        <i class="fa fa-exclamation-triangle"></i>
-
-                        INVALID COURSE CODE. PLEASE CHECK THE COURSE CODE.
-
-                    </div>
+                    INVALID COURSE CODE. PLEASE CHECK THE COURSE CODE.
 
                 </div>
 
-                <div>
+            </div>
 
-                    <input
-                        type="number"
-                        name="grade[]"
-                        class="form-control grade-input keyboard-field"
-                        placeholder="GRADE"
-                        step="0.01"
-                        min="0"
-                        max="74"
-                        data-key-type="grade"
-                    >
+            <div>
 
-                </div>
+                <input
+                    type="number"
+                    name="grade[]"
+                    class="form-control grade-input keyboard-field"
+                    placeholder="GRADE"
+                    step="0.01"
+                    min="0"
+                    max="74"
+                    data-key-type="grade"
+                >
 
-                <div>
+            </div>
 
-                    <button
-                        type="button"
-                        class="remove-subject-btn"
-                        title="Remove Subject"
-                        aria-label="Remove Subject"
-                    >
-                        &times;
-                    </button>
+            <div>
 
-                </div>
+                <button
+                    type="button"
+                    class="remove-subject-btn"
+                    title="Remove Subject"
+                    aria-label="Remove Subject"
+                >
+                    &times;
+                </button>
 
-            `;
+            </div>
 
+        `;
 
-            subjectContainer.appendChild(
-                newRow
-            );
+        subjectContainer.appendChild(newRow);
 
+        const newSubjectCode =
+            newRow.querySelector('.subject-code');
 
-            const newSubjectCode =
-                newRow.querySelector(
-                    '.subject-code'
-                );
+        attachUppercaseToField(newSubjectCode);
 
+        attachRemoveButton(newRow);
 
-            attachUppercaseToField(
-                newSubjectCode
-            );
+        newSubjectCode.focus();
 
+        newSubjectCode.classList.add('keyboard-focus');
 
-            attachRemoveButton(
-                newRow
-            );
-
-
-            newSubjectCode.focus();
-
-            newSubjectCode.classList.add(
-                'keyboard-focus'
-            );
-
-        }
-    );
+    });
 
 
     /* =========================================================
        FORM SUBMISSION VALIDATION
     ========================================================= */
 
-    const form =
-        document.getElementById('studentForm');
+    const form = document.getElementById('studentForm');
 
+    form.addEventListener('submit', function (event) {
 
-    form.addEventListener(
-        'submit',
-        function (event) {
-
-            document.querySelectorAll(
-                '.uppercase-input'
-            ).forEach(function (field) {
-
-                field.value =
-                    field.value.toUpperCase();
-
+        document.querySelectorAll('.uppercase-input')
+            .forEach(function (field) {
+                field.value = field.value.toUpperCase();
             });
 
 
-            /* =================================================
-               STUDENT NUMBER VALIDATION
-            ================================================= */
+        /* STUDENT NUMBER VALIDATION */
 
-            const studentNo =
-                document.getElementById(
-                    'student_no'
-                );
+        const studentNo =
+            document.getElementById('student_no');
 
-            const studentNoValue =
-                studentNo.value.trim();
+        const studentNoValue =
+            studentNo.value.trim();
+
+        if (!studentNoValue) {
+
+            event.preventDefault();
+
+            alert('PLEASE ENTER THE STUDENT NUMBER.');
+
+            studentNo.focus();
+
+            return;
+
+        }
+
+        if (!/^\d{1,10}$/.test(studentNoValue)) {
+
+            event.preventDefault();
+
+            alert(
+                'STUDENT NUMBER MUST CONTAIN NUMBERS ONLY AND MUST NOT EXCEED 10 DIGITS.'
+            );
+
+            studentNo.focus();
+
+            return;
+
+        }
 
 
-            if (!studentNoValue) {
+        /* NAME VALIDATION */
+
+        const firstName =
+            document.getElementById('first_name');
+
+        const middleName =
+            document.getElementById('middle_name');
+
+        const lastName =
+            document.getElementById('last_name');
+
+        if (/\d/.test(firstName.value)) {
+
+            event.preventDefault();
+
+            alert('FIRST NAME MUST NOT CONTAIN NUMBERS.');
+
+            firstName.focus();
+
+            return;
+
+        }
+
+        if (middleName.value && /\d/.test(middleName.value)) {
+
+            event.preventDefault();
+
+            alert('MIDDLE NAME MUST NOT CONTAIN NUMBERS.');
+
+            middleName.focus();
+
+            return;
+
+        }
+
+        if (/\d/.test(lastName.value)) {
+
+            event.preventDefault();
+
+            alert('LAST NAME MUST NOT CONTAIN NUMBERS.');
+
+            lastName.focus();
+
+            return;
+
+        }
+
+
+        /* ADMISSION YEAR VALIDATION */
+
+        const admissionYear =
+            document.getElementById('admission_year');
+
+        if (!/^\d{4}$/.test(admissionYear.value.trim())) {
+
+            event.preventDefault();
+
+            alert('ADMISSION YEAR MUST CONTAIN EXACTLY 4 NUMBERS.');
+
+            admissionYear.focus();
+
+            return;
+
+        }
+
+
+        /* STEP 1 VALIDATION */
+
+        if (!validateStudentInformation()) {
+
+            event.preventDefault();
+
+            goToStep(1);
+
+            return;
+
+        }
+
+
+        /* SEMESTER VALIDATION */
+
+        if (!semesterId.value) {
+
+            event.preventDefault();
+
+            alert('PLEASE SELECT A SCHOOL YEAR AND SEMESTER.');
+
+            goToStep(2);
+
+            return;
+
+        }
+
+
+        /* TOTAL SUBJECTS VALIDATION */
+
+        const totalSubjects =
+            document.getElementById('totalSubjects');
+
+        const totalSubjectsValue =
+            totalSubjects.value.trim();
+
+        if (
+            !/^\d+$/.test(totalSubjectsValue) ||
+            parseInt(totalSubjectsValue, 10) < 1 ||
+            parseInt(totalSubjectsValue, 10) > 100
+        ) {
+
+            event.preventDefault();
+
+            alert(
+                'TOTAL NUMBER OF SUBJECTS MUST BE A WHOLE NUMBER FROM 1 TO 100.'
+            );
+
+            totalSubjects.focus();
+
+            return;
+
+        }
+
+
+        /* SUBJECT / GRADE PAIR VALIDATION */
+
+        const subjectCodes =
+            document.querySelectorAll('.subject-code');
+
+        const grades =
+            document.querySelectorAll('.grade-input');
+
+        for (let i = 0; i < subjectCodes.length; i++) {
+
+            const subject = subjectCodes[i].value.trim();
+
+            const grade = grades[i].value.trim();
+
+            if (subject === '' && grade === '') {
+                continue;
+            }
+
+            if (subject !== '' && grade === '') {
 
                 event.preventDefault();
 
-                alert(
-                    'PLEASE ENTER THE STUDENT NUMBER.'
-                );
+                alert('PLEASE ENTER A GRADE FOR COURSE CODE: ' + subject);
 
-                studentNo.focus();
+                grades[i].focus();
 
                 return;
 
             }
 
-
-            if (
-                !/^\d{1,10}$/.test(
-                    studentNoValue
-                )
-            ) {
+            if (subject === '' && grade !== '') {
 
                 event.preventDefault();
 
-                alert(
-                    'STUDENT NUMBER MUST CONTAIN NUMBERS ONLY AND MUST NOT EXCEED 10 DIGITS.'
-                );
+                alert('PLEASE ENTER THE COURSE CODE FOR GRADE: ' + grade);
 
-                studentNo.focus();
+                subjectCodes[i].focus();
 
                 return;
 
             }
 
+            if (grade !== '') {
 
-            /* =================================================
-               NAME VALIDATION
-            ================================================= */
-
-            const firstName =
-                document.getElementById('first_name');
-
-            const middleName =
-                document.getElementById('middle_name');
-
-            const lastName =
-                document.getElementById('last_name');
-
-
-            if (/\d/.test(firstName.value)) {
-
-                event.preventDefault();
-
-                alert(
-                    'FIRST NAME MUST NOT CONTAIN NUMBERS.'
-                );
-
-                firstName.focus();
-
-                return;
-
-            }
-
-
-            if (
-                middleName.value &&
-                /\d/.test(middleName.value)
-            ) {
-
-                event.preventDefault();
-
-                alert(
-                    'MIDDLE NAME MUST NOT CONTAIN NUMBERS.'
-                );
-
-                middleName.focus();
-
-                return;
-
-            }
-
-
-            if (/\d/.test(lastName.value)) {
-
-                event.preventDefault();
-
-                alert(
-                    'LAST NAME MUST NOT CONTAIN NUMBERS.'
-                );
-
-                lastName.focus();
-
-                return;
-
-            }
-
-
-            /* =================================================
-               ADMISSION YEAR VALIDATION
-            ================================================= */
-
-            const admissionYear =
-                document.getElementById(
-                    'admission_year'
-                );
-
-
-            if (
-                !/^\d{4}$/.test(
-                    admissionYear.value.trim()
-                )
-            ) {
-
-                event.preventDefault();
-
-                alert(
-                    'ADMISSION YEAR MUST CONTAIN EXACTLY 4 NUMBERS.'
-                );
-
-                admissionYear.focus();
-
-                return;
-
-            }
-
-
-            /* =================================================
-               STEP 1 VALIDATION
-            ================================================= */
-
-            if (!validateStudentInformation()) {
-
-                event.preventDefault();
-
-                goToStep(1);
-
-                return;
-
-            }
-
-
-            /* =================================================
-               SEMESTER VALIDATION
-            ================================================= */
-
-            if (!semesterId.value) {
-
-                event.preventDefault();
-
-                alert(
-                    'PLEASE SELECT A SCHOOL YEAR AND SEMESTER.'
-                );
-
-                goToStep(2);
-
-                return;
-
-            }
-
-
-            /* =================================================
-               TOTAL SUBJECTS VALIDATION
-            ================================================= */
-
-            const totalSubjects =
-                document.getElementById(
-                    'totalSubjects'
-                );
-
-            const totalSubjectsValue =
-                totalSubjects.value.trim();
-
-
-            if (
-                !/^\d+$/.test(
-                    totalSubjectsValue
-                ) ||
-                parseInt(
-                    totalSubjectsValue,
-                    10
-                ) < 1 ||
-                parseInt(
-                    totalSubjectsValue,
-                    10
-                ) > 100
-            ) {
-
-                event.preventDefault();
-
-                alert(
-                    'TOTAL NUMBER OF SUBJECTS MUST BE A WHOLE NUMBER FROM 1 TO 100.'
-                );
-
-                totalSubjects.focus();
-
-                return;
-
-            }
-
-
-            /* =================================================
-               SUBJECT / GRADE PAIR VALIDATION
-            ================================================= */
-
-            const subjectCodes =
-                document.querySelectorAll(
-                    '.subject-code'
-                );
-
-            const grades =
-                document.querySelectorAll(
-                    '.grade-input'
-                );
-
-
-            for (
-                let i = 0;
-                i < subjectCodes.length;
-                i++
-            ) {
-
-                const subject =
-                    subjectCodes[i].value.trim();
-
-                const grade =
-                    grades[i].value.trim();
-
+                const numericGrade = parseFloat(grade);
 
                 if (
-                    subject === '' &&
-                    grade === ''
-                ) {
-
-                    continue;
-
-                }
-
-
-                if (
-                    subject !== '' &&
-                    grade === ''
+                    isNaN(numericGrade) ||
+                    numericGrade < 0 ||
+                    numericGrade > 74
                 ) {
 
                     event.preventDefault();
 
                     alert(
-                        'PLEASE ENTER A GRADE FOR COURSE CODE: ' +
-                        subject
+                        'ONLY FAILED GRADES FROM 0 TO 74 MAY BE ENCODED.'
                     );
 
                     grades[i].focus();
@@ -1898,80 +1648,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 }
 
-
-                if (
-                    subject === '' &&
-                    grade !== ''
-                ) {
-
-                    event.preventDefault();
-
-                    alert(
-                        'PLEASE ENTER THE COURSE CODE FOR GRADE: ' +
-                        grade
-                    );
-
-                    subjectCodes[i].focus();
-
-                    return;
-
-                }
-
-
-                if (grade !== '') {
-
-                    const numericGrade =
-                        parseFloat(grade);
-
-
-                    if (
-                        isNaN(numericGrade) ||
-                        numericGrade < 0 ||
-                        numericGrade > 74
-                    ) {
-
-                        event.preventDefault();
-
-                        alert(
-                            'ONLY FAILED GRADES FROM 0 TO 74 MAY BE ENCODED.'
-                        );
-
-                        grades[i].focus();
-
-                        return;
-
-                    }
-
-                }
-
-            }
-
-
-            /* =================================================
-               FINAL CONFIRMATION
-            ================================================= */
-
-            const confirmed =
-                confirm(
-                    'ARE YOU SURE YOU WANT TO SAVE THIS STUDENT AND THEIR ACADEMIC GRADES?'
-                );
-
-
-            if (!confirmed) {
-
-                event.preventDefault();
-
-                return;
-
             }
 
         }
-    );
+
+
+        /* FINAL CONFIRMATION */
+
+        const confirmed = confirm(
+            'ARE YOU SURE YOU WANT TO SAVE THIS STUDENT AND THEIR ACADEMIC GRADES?'
+        );
+
+        if (!confirmed) {
+            event.preventDefault();
+            return;
+        }
+
+    });
 
 
     /* =========================================================
-       IF VALIDATION FAILED IN STEP 2,
-       STAY ON STEP 2
+       IF VALIDATION FAILED IN STEP 2, STAY ON STEP 2
     ========================================================= */
 
     @if(
@@ -1999,43 +1696,27 @@ document.addEventListener('DOMContentLoaded', function () {
 function validateStudentInformation() {
 
     const studentNo =
-        document.getElementById(
-            'student_no'
-        );
+        document.getElementById('student_no');
 
     const firstName =
-        document.getElementById(
-            'first_name'
-        );
+        document.getElementById('first_name');
 
     const middleName =
-        document.getElementById(
-            'middle_name'
-        );
+        document.getElementById('middle_name');
 
     const lastName =
-        document.getElementById(
-            'last_name'
-        );
+        document.getElementById('last_name');
 
     const admissionYear =
-        document.getElementById(
-            'admission_year'
-        );
+        document.getElementById('admission_year');
 
     const currentYearLevel =
-        document.getElementById(
-            'current_year_level'
-        );
+        document.getElementById('current_year_level');
 
 
-    if (
-        !studentNo.value.trim()
-    ) {
+    if (!studentNo.value.trim()) {
 
-        alert(
-            'PLEASE ENTER THE STUDENT NUMBER.'
-        );
+        alert('PLEASE ENTER THE STUDENT NUMBER.');
 
         studentNo.focus();
 
@@ -2043,12 +1724,7 @@ function validateStudentInformation() {
 
     }
 
-
-    if (
-        !/^\d{1,10}$/.test(
-            studentNo.value.trim()
-        )
-    ) {
+    if (!/^\d{1,10}$/.test(studentNo.value.trim())) {
 
         alert(
             'STUDENT NUMBER MUST CONTAIN NUMBERS ONLY AND MUST NOT EXCEED 10 DIGITS.'
@@ -2060,14 +1736,9 @@ function validateStudentInformation() {
 
     }
 
+    if (!firstName.value.trim()) {
 
-    if (
-        !firstName.value.trim()
-    ) {
-
-        alert(
-            'PLEASE ENTER THE FIRST NAME.'
-        );
+        alert('PLEASE ENTER THE FIRST NAME.');
 
         firstName.focus();
 
@@ -2075,16 +1746,9 @@ function validateStudentInformation() {
 
     }
 
+    if (/\d/.test(firstName.value)) {
 
-    if (
-        /\d/.test(
-            firstName.value
-        )
-    ) {
-
-        alert(
-            'FIRST NAME MUST NOT CONTAIN NUMBERS.'
-        );
+        alert('FIRST NAME MUST NOT CONTAIN NUMBERS.');
 
         firstName.focus();
 
@@ -2092,17 +1756,9 @@ function validateStudentInformation() {
 
     }
 
+    if (middleName.value && /\d/.test(middleName.value)) {
 
-    if (
-        middleName.value &&
-        /\d/.test(
-            middleName.value
-        )
-    ) {
-
-        alert(
-            'MIDDLE NAME MUST NOT CONTAIN NUMBERS.'
-        );
+        alert('MIDDLE NAME MUST NOT CONTAIN NUMBERS.');
 
         middleName.focus();
 
@@ -2110,14 +1766,9 @@ function validateStudentInformation() {
 
     }
 
+    if (!lastName.value.trim()) {
 
-    if (
-        !lastName.value.trim()
-    ) {
-
-        alert(
-            'PLEASE ENTER THE LAST NAME.'
-        );
+        alert('PLEASE ENTER THE LAST NAME.');
 
         lastName.focus();
 
@@ -2125,16 +1776,9 @@ function validateStudentInformation() {
 
     }
 
+    if (/\d/.test(lastName.value)) {
 
-    if (
-        /\d/.test(
-            lastName.value
-        )
-    ) {
-
-        alert(
-            'LAST NAME MUST NOT CONTAIN NUMBERS.'
-        );
+        alert('LAST NAME MUST NOT CONTAIN NUMBERS.');
 
         lastName.focus();
 
@@ -2142,16 +1786,9 @@ function validateStudentInformation() {
 
     }
 
+    if (!/^\d{4}$/.test(admissionYear.value.trim())) {
 
-    if (
-        !/^\d{4}$/.test(
-            admissionYear.value.trim()
-        )
-    ) {
-
-        alert(
-            'ADMISSION YEAR MUST CONTAIN EXACTLY 4 NUMBERS.'
-        );
+        alert('ADMISSION YEAR MUST CONTAIN EXACTLY 4 NUMBERS.');
 
         admissionYear.focus();
 
@@ -2159,21 +1796,15 @@ function validateStudentInformation() {
 
     }
 
+    if (!currentYearLevel.value) {
 
-    if (
-        !currentYearLevel.value
-    ) {
-
-        alert(
-            'PLEASE SELECT THE CURRENT YEAR LEVEL.'
-        );
+        alert('PLEASE SELECT THE CURRENT YEAR LEVEL.');
 
         currentYearLevel.focus();
 
         return false;
 
     }
-
 
     return true;
 
@@ -2188,75 +1819,43 @@ function goToStep(step) {
 
     if (step === 1) {
 
-        document
-            .getElementById('step1')
-            .classList.add('active');
+        document.getElementById('step1').classList.add('active');
 
-        document
-            .getElementById('step2')
-            .classList.remove('active');
+        document.getElementById('step2').classList.remove('active');
 
+        document.getElementById('step1Button').classList.add('active');
 
-        document
-            .getElementById('step1Button')
-            .classList.add('active');
-
-        document
-            .getElementById('step2Button')
-            .classList.remove('active');
+        document.getElementById('step2Button').classList.remove('active');
 
         return;
 
     }
 
-
     if (step === 2) {
 
-        if (
-            !validateStudentInformation()
-        ) {
+        if (!validateStudentInformation()) {
 
-            document
-                .getElementById('step1')
-                .classList.add('active');
+            document.getElementById('step1').classList.add('active');
 
-            document
-                .getElementById('step2')
-                .classList.remove('active');
+            document.getElementById('step2').classList.remove('active');
 
-            document
-                .getElementById('step1Button')
-                .classList.add('active');
+            document.getElementById('step1Button').classList.add('active');
 
-            document
-                .getElementById('step2Button')
-                .classList.remove('active');
+            document.getElementById('step2Button').classList.remove('active');
 
             return;
 
         }
 
+        document.getElementById('step1').classList.remove('active');
 
-        document
-            .getElementById('step1')
-            .classList.remove('active');
+        document.getElementById('step2').classList.add('active');
 
-        document
-            .getElementById('step2')
-            .classList.add('active');
+        document.getElementById('step1Button').classList.remove('active');
 
+        document.getElementById('step1Button').classList.add('completed');
 
-        document
-            .getElementById('step1Button')
-            .classList.remove('active');
-
-        document
-            .getElementById('step1Button')
-            .classList.add('completed');
-
-        document
-            .getElementById('step2Button')
-            .classList.add('active');
+        document.getElementById('step2Button').classList.add('active');
 
     }
 
@@ -2269,19 +1868,15 @@ function goToStep(step) {
 
 function closeCreatePage() {
 
-    const confirmed =
-        confirm(
-            'ARE YOU SURE YOU WANT TO CANCEL? ANY INFORMATION YOU ENTERED WILL NOT BE SAVED.'
-        );
-
+    const confirmed = confirm(
+        'ARE YOU SURE YOU WANT TO CANCEL? ANY INFORMATION YOU ENTERED WILL NOT BE SAVED.'
+    );
 
     if (!confirmed) {
         return;
     }
 
-
-    window.location.href =
-        "{{ route('students.index') }}";
+    window.location.href = "{{ route('students.index') }}";
 
 }
 
@@ -2290,28 +1885,11 @@ function closeCreatePage() {
    KEYBOARD NAVIGATION
 ============================================================= */
 
-/*
-    Arrow keys:
-
-    ← = move left
-    → = move right
-    ↑ = move up
-    ↓ = move down
-
-    The browser's normal arrow-key behavior is prevented
-    when another form field is available.
-
-    This allows the admin to type and move around the
-    form using only the keyboard.
-*/
-
 function getKeyboardFields() {
 
     return Array.from(
-        document.querySelectorAll(
-            '.keyboard-field'
-        )
-    ).filter(function(field) {
+        document.querySelectorAll('.keyboard-field')
+    ).filter(function (field) {
 
         return !field.disabled &&
                field.offsetParent !== null;
@@ -2321,63 +1899,41 @@ function getKeyboardFields() {
 }
 
 
-function findClosestCreateField(
-    current,
-    direction
-) {
+function findClosestCreateField(current, direction) {
 
-    const fields =
-        getKeyboardFields();
+    const fields = getKeyboardFields();
 
     if (!fields.length) {
         return null;
     }
 
-
-    const currentRect =
-        current.getBoundingClientRect();
+    const currentRect = current.getBoundingClientRect();
 
     const currentCenterX =
-        currentRect.left +
-        currentRect.width / 2;
+        currentRect.left + currentRect.width / 2;
 
     const currentCenterY =
-        currentRect.top +
-        currentRect.height / 2;
-
+        currentRect.top + currentRect.height / 2;
 
     let candidates = [];
 
-
-    fields.forEach(function(field) {
+    fields.forEach(function (field) {
 
         if (field === current) {
             return;
         }
 
+        const rect = field.getBoundingClientRect();
 
-        const rect =
-            field.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
 
-        const centerX =
-            rect.left +
-            rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
 
-        const centerY =
-            rect.top +
-            rect.height / 2;
+        const dx = centerX - currentCenterX;
 
-        const dx =
-            centerX - currentCenterX;
+        const dy = centerY - currentCenterY;
 
-        const dy =
-            centerY - currentCenterY;
-
-
-        if (
-            direction === 'left' &&
-            dx < -5
-        ) {
+        if (direction === 'left' && dx < -5) {
 
             candidates.push({
                 field: field,
@@ -2387,11 +1943,7 @@ function findClosestCreateField(
 
         }
 
-
-        if (
-            direction === 'right' &&
-            dx > 5
-        ) {
+        if (direction === 'right' && dx > 5) {
 
             candidates.push({
                 field: field,
@@ -2401,11 +1953,7 @@ function findClosestCreateField(
 
         }
 
-
-        if (
-            direction === 'up' &&
-            dy < -5
-        ) {
+        if (direction === 'up' && dy < -5) {
 
             candidates.push({
                 field: field,
@@ -2415,11 +1963,7 @@ function findClosestCreateField(
 
         }
 
-
-        if (
-            direction === 'down' &&
-            dy > 5
-        ) {
+        if (direction === 'down' && dy > 5) {
 
             candidates.push({
                 field: field,
@@ -2430,230 +1974,137 @@ function findClosestCreateField(
         }
 
     });
-
 
     if (!candidates.length) {
         return null;
     }
 
+    candidates.sort(function (a, b) {
 
-    candidates.sort(function(a, b) {
+        if (direction === 'left' || direction === 'right') {
 
-        if (
-            direction === 'left' ||
-            direction === 'right'
-        ) {
+            const aScore = (a.vertical * 3) + a.horizontal;
 
-            const aScore =
-                (a.vertical * 3) +
-                a.horizontal;
-
-            const bScore =
-                (b.vertical * 3) +
-                b.horizontal;
+            const bScore = (b.vertical * 3) + b.horizontal;
 
             return aScore - bScore;
 
         }
 
+        const aScore = (a.horizontal * 3) + a.vertical;
 
-        const aScore =
-            (a.horizontal * 3) +
-            a.vertical;
-
-        const bScore =
-            (b.horizontal * 3) +
-            b.vertical;
+        const bScore = (b.horizontal * 3) + b.vertical;
 
         return aScore - bScore;
 
     });
-
 
     return candidates[0].field;
 
 }
 
 
-document.addEventListener(
-    'keydown',
-    function(e) {
+document.addEventListener('keydown', function (e) {
+
+    if (!e.target.classList.contains('keyboard-field')) {
+        return;
+    }
+
+    let direction = null;
+
+    if (e.key === 'ArrowUp') {
+        direction = 'up';
+    } else if (e.key === 'ArrowDown') {
+        direction = 'down';
+    } else if (e.key === 'ArrowLeft') {
+        direction = 'left';
+    } else if (e.key === 'ArrowRight') {
+        direction = 'right';
+    }
+
+    if (!direction) {
+        return;
+    }
+
+    const next = findClosestCreateField(e.target, direction);
+
+    if (next) {
+
+        e.preventDefault();
+
+        next.focus();
+
+        next.classList.add('keyboard-focus');
 
         if (
-            !e.target.classList.contains(
-                'keyboard-field'
-            )
+            next.tagName === 'INPUT' &&
+            (next.type === 'text' || next.type === 'number')
         ) {
-            return;
-        }
 
+            try {
 
-        let direction = null;
+                const length = next.value.length;
 
+                next.setSelectionRange(length, length);
 
-        if (e.key === 'ArrowUp') {
-            direction = 'up';
-        }
-
-        else if (e.key === 'ArrowDown') {
-            direction = 'down';
-        }
-
-        else if (e.key === 'ArrowLeft') {
-            direction = 'left';
-        }
-
-        else if (e.key === 'ArrowRight') {
-            direction = 'right';
-        }
-
-
-        if (!direction) {
-            return;
-        }
-
-
-        const next =
-            findClosestCreateField(
-                e.target,
-                direction
-            );
-
-
-        if (next) {
-
-            e.preventDefault();
-
-            next.focus();
-
-            next.classList.add(
-                'keyboard-focus'
-            );
-
-
-            if (
-                next.tagName === 'INPUT' &&
-                (
-                    next.type === 'text' ||
-                    next.type === 'number'
-                )
-            ) {
-
-                try {
-
-                    const length =
-                        next.value.length;
-
-                    next.setSelectionRange(
-                        length,
-                        length
-                    );
-
-                }
-
-                catch (error) {
-                    /* Number inputs may not support selection. */
-                }
-
+            } catch (error) {
+                /* Number inputs may not support selection. */
             }
 
         }
 
     }
-);
+
+});
 
 
 /* =============================================================
    ENTER KEY NAVIGATION
 ============================================================= */
 
-document.addEventListener(
-    'keydown',
-    function(e) {
+document.addEventListener('keydown', function (e) {
 
-        if (
-            !e.target.classList.contains(
-                'keyboard-field'
-            )
-        ) {
-            return;
-        }
-
-
-        if (e.key !== 'Enter') {
-            return;
-        }
-
-
-        e.preventDefault();
-
-
-        const fields =
-            getKeyboardFields();
-
-        const currentIndex =
-            fields.indexOf(e.target);
-
-
-        if (
-            currentIndex >= 0 &&
-            currentIndex < fields.length - 1
-        ) {
-
-            fields[
-                currentIndex + 1
-            ].focus();
-
-        }
-
+    if (!e.target.classList.contains('keyboard-field')) {
+        return;
     }
-);
+
+    if (e.key !== 'Enter') {
+        return;
+    }
+
+    e.preventDefault();
+
+    const fields = getKeyboardFields();
+
+    const currentIndex = fields.indexOf(e.target);
+
+    if (currentIndex >= 0 && currentIndex < fields.length - 1) {
+        fields[currentIndex + 1].focus();
+    }
+
+});
 
 
 /* =============================================================
    FOCUS INDICATOR
 ============================================================= */
 
-document.addEventListener(
-    'focus',
-    function(e) {
+document.addEventListener('focus', function (e) {
 
-        if (
-            e.target.classList.contains(
-                'keyboard-field'
-            )
-        ) {
+    if (e.target.classList.contains('keyboard-field')) {
+        e.target.classList.add('keyboard-focus');
+    }
 
-            e.target.classList.add(
-                'keyboard-focus'
-            );
-
-        }
-
-    },
-    true
-);
+}, true);
 
 
-document.addEventListener(
-    'blur',
-    function(e) {
+document.addEventListener('blur', function (e) {
 
-        if (
-            e.target.classList.contains(
-                'keyboard-field'
-            )
-        ) {
+    if (e.target.classList.contains('keyboard-field')) {
+        e.target.classList.remove('keyboard-focus');
+    }
 
-            e.target.classList.remove(
-                'keyboard-focus'
-            );
-
-        }
-
-    },
-    true
-);
+}, true);
 
 </script>
 

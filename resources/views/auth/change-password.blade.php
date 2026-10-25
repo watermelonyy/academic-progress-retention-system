@@ -176,6 +176,18 @@
 
     <div class="password-card">
 
+        {{-- BACK BUTTON --}}
+           <div class="mb-3">
+        <button
+            type="button"
+            class="btn btn-light border shadow-sm back-button"
+            onclick="history.back()"
+        >
+            <i class="fa fa-arrow-left me-2"></i>
+            Back
+        </button>
+    </div>
+
         {{-- HEADER --}}
         <div class="password-header">
 
@@ -407,18 +419,7 @@
             </form>
 
 
-            {{-- BACK BUTTON --}}
-            <div class="text-center mt-4">
-
-                <a href="{{ route('login') }}"
-                   class="btn btn-outline-secondary back-button">
-
-                    <i class="fa-solid fa-arrow-left me-1"></i>
-
-                    Back
-
-                </a>
-
+            
             </div>
 
         </div>

@@ -29,42 +29,36 @@ class HomeController extends Controller
         | NORMALIZE STUDENT STATUS
         |--------------------------------------------------------------------------
         |
-        | Students without an evaluation are considered Regular.
-        | Old database values such as "For Shifting Out" are converted
-        | to the current display value "Shifting Out".
+        | Students without an evaluation are considered Below Treshold.
+        | Legacy academic status values are normalized where appropriate.
+        | Residency Risk is kept separate and is NOT converted to
+        | Below Treshold.
         |
         */
 
         $students = $students->map(function ($student) {
 
-            $status = optional(
-                $student->latestStatus
-            )->academic_status ?? 'Regular';
+            $status = trim(
+                (string) (
+                    optional($student->latestStatus)->academic_status
+                    ?? 'Below Treshold'
+                )
+            );
 
+            if (in_array($status, [
+                'Regular',
+                'Below Threshold'
+            ], true)) {
+                $status = 'Below Treshold';
+            }
 
             if ($status === 'For Shifting Out') {
-
                 $status = 'Shifting Out';
-
             }
-
-
-            /*
-            | Old records may contain Residency Risk as an academic status.
-            | Residency Risk is now a warning only, so keep the actual
-            | academic status as Regular for dashboard purposes.
-            */
-            if ($status === 'Residency Risk') {
-
-                $status = 'Regular';
-
-            }
-
 
             $student->dashboard_status = $status;
 
             return $student;
-
         });
 
 
@@ -73,10 +67,7 @@ class HomeController extends Controller
         | RESIDENCY RISK PROJECTION
         |--------------------------------------------------------------------------
         |
-        | Residency Risk is a warning only. It is NOT an academic status.
-        |
-        | Use the exact same residency calculation used by StudentController.
-        | This keeps the Student List and Home dashboard synchronized.
+        | Residency Risk is calculated separately from academic status.
         |
         */
 
@@ -119,36 +110,25 @@ class HomeController extends Controller
 
         $regularStudents = $students
             ->filter(function ($student) {
-
-                return $student->dashboard_status === 'Regular';
-
+                return $student->dashboard_status === 'Below Treshold';
             })
             ->values();
-
 
         $warningStudents = $students
             ->filter(function ($student) {
-
                 return $student->dashboard_status === 'Academic Warning';
-
             })
             ->values();
-
 
         $probationStudents = $students
             ->filter(function ($student) {
-
                 return $student->dashboard_status === 'Probation';
-
             })
             ->values();
 
-
         $shiftingStudents = $students
             ->filter(function ($student) {
-
                 return $student->dashboard_status === 'Shifting Out';
-
             })
             ->values();
 
@@ -158,18 +138,14 @@ class HomeController extends Controller
         | RESIDENCY RISK STUDENTS
         |--------------------------------------------------------------------------
         |
-        | IMPORTANT:
-        | Residency Risk is NOT checked through dashboard_status.
-        | It is calculated separately by StudentController and stored as
-        | the temporary residency_risk property on each student model.
+        | This collection is based on the separate residency projection,
+        | not on the student's academic status.
         |
         */
 
         $residencyRiskStudents = $students
             ->filter(function ($student) {
-
                 return !empty($student->residency_risk);
-
             })
             ->values();
 
@@ -196,26 +172,15 @@ class HomeController extends Controller
         | PRIORITY ALERTS
         |--------------------------------------------------------------------------
         |
-        | Priority Alert is based ONLY on academic performance comparison.
+        | Current failure < Previous failure = Improvement
+        | Current failure = Previous failure = Priority Alert
+        | Current failure > Previous failure = Priority Alert
         |
-        | Current failure < Previous failure
-        |     = Improvement
-        |     = NO Priority Alert
-        |
-        | Current failure = Previous failure
-        |     = No improvement
-        |     = Priority Alert
-        |
-        | Current failure > Previous failure
-        |     = Worse
-        |     = Priority Alert
-        |
-        | A student with only one evaluation can NEVER be a Priority Alert.
+        | A student with only one evaluation cannot be a Priority Alert.
         |
         */
 
         $priorityStudents = collect();
-
 
         foreach ($students as $student) {
 
@@ -234,7 +199,6 @@ class HomeController extends Controller
             $latestEvaluation =
                 $evaluations->first();
 
-
             $previousEvaluation =
                 $evaluations->skip(1)->first();
 
@@ -249,9 +213,7 @@ class HomeController extends Controller
                 !$latestEvaluation ||
                 !$previousEvaluation
             ) {
-
                 continue;
-
             }
 
 
@@ -263,7 +225,6 @@ class HomeController extends Controller
 
             $currentFailure =
                 (float) $latestEvaluation->failure_percentage;
-
 
             $previousFailure =
                 (float) $previousEvaluation->failure_percentage;
@@ -279,9 +240,7 @@ class HomeController extends Controller
                 $currentFailure <
                 $previousFailure
             ) {
-
                 continue;
-
             }
 
 
@@ -291,38 +250,36 @@ class HomeController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $student->dashboard_status =
-                $latestEvaluation->academic_status;
+            $priorityStatus = trim(
+                (string) $latestEvaluation->academic_status
+            );
 
 
-            if (
-                $student->dashboard_status ===
-                'For Shifting Out'
-            ) {
+            /*
+            |--------------------------------------------------------------------------
+            | NORMALIZE ACADEMIC STATUS FOR PRIORITY ALERT DISPLAY
+            |--------------------------------------------------------------------------
+            |
+            | Do not convert Residency Risk into Below Treshold.
+            |
+            */
 
-                $student->dashboard_status =
-                    'Shifting Out';
-
+            if (in_array($priorityStatus, [
+                'Regular',
+                'Below Threshold'
+            ], true)) {
+                $priorityStatus = 'Below Treshold';
             }
 
-
-            if (
-                $student->dashboard_status ===
-                'Residency Risk'
-            ) {
-
-                $student->dashboard_status =
-                    'Regular';
-
+            if ($priorityStatus === 'For Shifting Out') {
+                $priorityStatus = 'Shifting Out';
             }
 
+            $student->dashboard_status = $priorityStatus;
 
             $student->priority_alert = true;
 
-
-            $priorityStudents->push(
-                $student
-            );
+            $priorityStudents->push($student);
 
         }
 
@@ -336,10 +293,7 @@ class HomeController extends Controller
         | ALL EVALUATIONS
         |--------------------------------------------------------------------------
         |
-        | This collection is used for:
-        |
-        | 1. Recently Evaluated Students
-        | 2. School Year Performance
+        | Used for Recently Evaluated Students and School Year Performance.
         |
         */
 
@@ -355,13 +309,7 @@ class HomeController extends Controller
         | RECENTLY EVALUATED STUDENTS
         |--------------------------------------------------------------------------
         |
-        | Show exactly 3 UNIQUE students.
-        |
-        | If a student has multiple evaluations, only the student's
-        | most recent evaluation is displayed.
-        |
-        | created_at is used first to determine the newest evaluation.
-        | status_id is used as a secondary tie-breaker.
+        | Show the three most recent unique students.
         |
         */
 
@@ -436,14 +384,8 @@ class HomeController extends Controller
         | SCHOOL YEAR PERFORMANCE
         |--------------------------------------------------------------------------
         |
-        | Counts UNIQUE students who were flagged with:
-        |
-        | - Academic Warning
-        | - Probation
-        | - Shifting Out
-        |
-        | A student is counted only once per school year even if
-        | the student has multiple flagged evaluations in that year.
+        | Counts unique students flagged with Academic Warning, Probation,
+        | or Shifting Out during each school year.
         |
         */
 
@@ -491,15 +433,10 @@ class HomeController extends Controller
         */
 
         $schoolYearLabels =
-            array_keys(
-                $schoolYearPerformance
-            );
-
+            array_keys($schoolYearPerformance);
 
         $schoolYearCounts =
-            array_values(
-                $schoolYearPerformance
-            );
+            array_values($schoolYearPerformance);
 
 
         /*
@@ -511,9 +448,7 @@ class HomeController extends Controller
         return view(
             'home',
             compact(
-
                 'students',
-
                 'totalStudents',
 
                 'regular',
@@ -536,7 +471,6 @@ class HomeController extends Controller
 
                 'schoolYearLabels',
                 'schoolYearCounts'
-
             )
         );
     }

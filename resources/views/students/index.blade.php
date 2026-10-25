@@ -25,7 +25,6 @@
         border-radius: 14px;
         padding: 24px 26px;
         margin-bottom: 20px;
-
         box-shadow: 0 3px 14px rgba(0, 0, 0, 0.05);
     }
 
@@ -46,16 +45,12 @@
     .students-title-icon {
         width: 52px;
         height: 52px;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         border-radius: 12px;
-
         background: #eaf3ff;
         color: #0e8203;
-
         font-size: 21px;
         flex-shrink: 0;
     }
@@ -84,23 +79,32 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
-
         min-height: 44px;
         padding: 10px 18px;
-
         border-radius: 9px;
-
         font-weight: 600;
+
+        /* CHANGED: GREEN */
+        background: #0e8203 !important;
+        border-color: #0e8203 !important;
+        color: #ffffff !important;
 
         box-shadow: 0 3px 8px rgba(39, 220, 7, 0.18);
 
         transition:
             transform 0.2s ease,
+            background-color 0.2s ease,
+            border-color 0.2s ease,
             box-shadow 0.2s ease;
     }
 
     .add-student-btn:hover {
         transform: translateY(-2px);
+
+        /* CHANGED: GREEN HOVER */
+        background: #0b6f02 !important;
+        border-color: #0b6f02 !important;
+        color: #ffffff !important;
 
         box-shadow:
             0 6px 14px rgba(3, 171, 17, 0.22);
@@ -116,7 +120,6 @@
         border-radius: 10px;
         padding: 13px 16px;
         margin-bottom: 18px;
-
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
@@ -131,12 +134,9 @@
 
     .search-card {
         background: #ffffff;
-
         border: 1px solid #e9ecef;
         border-radius: 12px;
-
         margin-bottom: 20px;
-
         box-shadow: 0 3px 14px rgba(0, 0, 0, 0.045);
     }
 
@@ -151,32 +151,24 @@
 
     .filter-area {
         position: relative;
-
         display: flex;
         align-items: center;
         justify-content: flex-start;
-
         margin-bottom: 13px;
     }
 
     .filter-button {
         width: 38px;
         height: 38px;
-
         display: inline-flex;
         align-items: center;
         justify-content: center;
-
         border: 1px solid #dee2e6;
         border-radius: 8px;
-
         background: #ffffff;
         color: #495057;
-
         font-size: 15px;
-
         cursor: pointer;
-
         transition:
             background-color 0.2s ease,
             border-color 0.2s ease,
@@ -188,8 +180,7 @@
     .filter-button.active {
         background: #eaf3ff;
         border-color: #b9d7ff;
-        color:#0e8203;
-
+        color: #0e8203;
         box-shadow:
             0 2px 7px rgba(13, 110, 253, 0.12);
     }
@@ -207,27 +198,17 @@
 
     .filter-dropdown {
         position: absolute;
-
         top: calc(100% + 8px);
         left: 0;
-
         width: 220px;
-
         background: #ffffff;
-
         border: 1px solid #e2e6ea;
-
         border-radius: 10px;
-
         padding: 8px;
-
         box-shadow:
             0 8px 25px rgba(0, 0, 0, 0.12);
-
         z-index: 1000;
-
         display: none;
-
         animation: filterDropdownIn 0.15s ease;
     }
 
@@ -252,42 +233,27 @@
 
     .filter-dropdown-header {
         padding: 8px 10px 7px;
-
         font-size: 12px;
         font-weight: 700;
-
         color: #6c757d;
-
         border-bottom: 1px solid #f0f1f3;
-
         margin-bottom: 5px;
     }
 
 
     .filter-option {
         width: 100%;
-
         display: flex;
         align-items: center;
-
         gap: 9px;
-
         border: none;
-
         background: transparent;
-
         color: #343a40;
-
         padding: 9px 10px;
-
         border-radius: 7px;
-
         text-align: left;
-
         font-size: 13px;
-
         cursor: pointer;
-
         transition:
             background-color 0.15s ease,
             color 0.15s ease;
@@ -306,9 +272,7 @@
 
     .filter-option-icon {
         width: 17px;
-
         text-align: center;
-
         font-size: 12px;
     }
 
@@ -319,11 +283,8 @@
 
     .active-filter-text {
         display: none;
-
         margin-left: 9px;
-
         font-size: 12px;
-
         color: #6c757d;
     }
 
@@ -343,12 +304,9 @@
 
     .search-label {
         display: block;
-
         font-size: 13px;
         font-weight: 700;
-
         color: #495057;
-
         margin-bottom: 8px;
     }
 
@@ -366,16 +324,11 @@
     .search-input-wrapper {
         display: flex;
         align-items: center;
-
         flex: 1;
-
         min-width: 0;
-
         border: 1px solid #ced4da;
         border-radius: 9px;
-
         background: #ffffff;
-
         transition:
             border-color 0.2s ease,
             box-shadow 0.2s ease;
@@ -383,7 +336,6 @@
 
     .search-input-wrapper:focus-within {
         border-color: #13e333;
-
         box-shadow:
             0 0 0 3px rgba(13, 253, 25, 0.1);
     }
@@ -391,26 +343,19 @@
     .search-icon {
         width: 45px;
         min-width: 45px;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         color: #6c757d;
     }
 
     .search-input {
         flex: 1;
-
         min-width: 0;
-
         border: none !important;
         outline: none !important;
-
         box-shadow: none !important;
-
         padding: 11px 12px 11px 0;
-
         font-size: 14px;
     }
 
@@ -422,13 +367,9 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-
         gap: 6px;
-
         padding: 0 14px;
-
         border-radius: 8px;
-
         white-space: nowrap;
     }
 
@@ -436,14 +377,27 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-
         gap: 7px;
-
         min-width: 105px;
-
         border-radius: 9px;
-
         font-weight: 600;
+
+        /* CHANGED: GREEN */
+        background: #0e8203 !important;
+        border-color: #0e8203 !important;
+        color: #ffffff !important;
+
+        transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .search-submit-btn:hover {
+        /* CHANGED: GREEN HOVER */
+        background: #0b6f02 !important;
+        border-color: #0b6f02 !important;
+        color: #ffffff !important;
     }
 
 
@@ -453,12 +407,9 @@
 
     .student-card {
         background: #ffffff;
-
         border: 1px solid #e9ecef;
         border-radius: 14px;
-
         overflow: hidden;
-
         box-shadow: 0 3px 16px rgba(0, 0, 0, 0.05);
     }
 
@@ -469,15 +420,11 @@
 
     .student-card-header {
         padding: 17px 21px;
-
         background: #ffffff;
-
         border-bottom: 1px solid #e9ecef;
-
         display: flex;
         align-items: center;
         justify-content: space-between;
-
         gap: 15px;
     }
 
@@ -490,41 +437,30 @@
     .student-card-heading-icon {
         width: 34px;
         height: 34px;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         border-radius: 8px;
-
         background: #f0f6ff;
         color: #0e8203;
-
         font-size: 14px;
     }
 
     .student-card-title {
         margin: 0;
-
         font-size: 16px;
         font-weight: 700;
-
         color: #212529;
     }
 
     .student-count {
         background: #eaf3ff;
-        color: #0d6efd;
-
+        color: #0e8203;
         border: 1px solid #d5e7ff;
-
         border-radius: 20px;
-
         padding: 6px 11px;
-
         font-size: 12px;
         font-weight: 700;
-
         white-space: nowrap;
     }
 
@@ -545,19 +481,12 @@
     .student-item {
         display: flex;
         align-items: center;
-
         width: 100%;
-
         padding: 16px 21px;
-
         text-decoration: none;
-
         color: #212529;
-
         border-bottom: 1px solid #f0f1f3;
-
         background: #ffffff;
-
         transition:
             background-color 0.2s ease,
             padding-left 0.2s ease;
@@ -580,22 +509,15 @@
     .student-avatar {
         width: 44px;
         height: 44px;
-
         min-width: 44px;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         border-radius: 11px;
-
         background: #eef5ff;
         color: #0e8203;
-
         font-size: 17px;
-
         margin-right: 14px;
-
         transition:
             background-color 0.2s ease,
             color 0.2s ease;
@@ -613,16 +535,11 @@
 
     .student-name {
         flex: 1;
-
         min-width: 0;
-
         font-size: 15px;
         font-weight: 600;
-
         color: #343a40;
-
         line-height: 1.4;
-
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -640,21 +557,17 @@
     .student-view-text {
         display: inline-flex;
         align-items: center;
-
         gap: 7px;
-
         margin-right: 10px;
-
         font-size: 12px;
         font-weight: 600;
-
         color: #6c757d;
-
         transition: color 0.2s ease;
     }
 
     .student-item:hover .student-view-text {
-        color: #0d6efd;
+        /* CHANGED: GREEN HOVER */
+        color: #0e8203;
     }
 
 
@@ -665,21 +578,14 @@
     .student-arrow {
         width: 32px;
         height: 32px;
-
         min-width: 32px;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         border-radius: 50%;
-
         background: #f8f9fa;
-
         color: #6c757d;
-
         font-size: 11px;
-
         transition:
             background-color 0.2s ease,
             color 0.2s ease,
@@ -687,9 +593,9 @@
     }
 
     .student-item:hover .student-arrow {
-        background: #0d6efd;
+        /* CHANGED: GREEN HOVER */
+        background: #0e8203;
         color: #ffffff;
-
         transform: translateX(3px);
     }
 
@@ -701,7 +607,6 @@
     .empty-state,
     .search-empty-state {
         text-align: center;
-
         padding: 65px 20px;
     }
 
@@ -713,19 +618,13 @@
     .search-empty-icon {
         width: 70px;
         height: 70px;
-
         margin: 0 auto;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         border-radius: 50%;
-
         background: #f4f6f8;
-
         color: #adb5bd;
-
         font-size: 27px;
     }
 
@@ -733,23 +632,17 @@
     .search-empty-title {
         margin-top: 18px;
         margin-bottom: 7px;
-
         font-size: 18px;
         font-weight: 700;
-
         color: #343a40;
     }
 
     .empty-description,
     .search-empty-description {
         max-width: 420px;
-
         margin: 0 auto 18px;
-
         color: #6c757d;
-
         font-size: 14px;
-
         line-height: 1.6;
     }
 
@@ -767,24 +660,16 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-
         width: 34px;
         height: 34px;
         min-width: 34px;
-
         margin-right: 10px;
-
         border-radius: 50%;
-
         background: #fff3cd;
         color: #dc3545;
-
         border: 1px solid #f1d58a;
-
         font-size: 14px;
-
         cursor: pointer;
-
         transition:
             background-color 0.2s ease,
             color 0.2s ease,
@@ -795,16 +680,13 @@
     .student-priority-alert:hover {
         background: #dc3545;
         color: #ffffff;
-
         transform: scale(1.08);
-
         box-shadow:
             0 4px 10px rgba(220, 53, 69, 0.25);
     }
 
     .student-priority-alert:focus {
         outline: none;
-
         box-shadow:
             0 0 0 3px rgba(220, 53, 69, 0.15);
     }
@@ -818,24 +700,16 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-
         width: 34px;
         height: 34px;
         min-width: 34px;
-
         margin-right: 10px;
-
         border-radius: 50%;
-
         background: #fff8e1;
         color: #d39e00;
-
         border: 1px solid #f0d98c;
-
         font-size: 14px;
-
         cursor: help;
-
         transition:
             background-color 0.2s ease,
             color 0.2s ease,
@@ -846,9 +720,7 @@
     .student-residency-alert:hover {
         background: #d39e00;
         color: #ffffff;
-
         transform: scale(1.08);
-
         box-shadow:
             0 4px 10px rgba(211, 158, 0, 0.22);
     }
@@ -927,9 +799,7 @@
             width: 40px;
             height: 40px;
             min-width: 40px;
-
             margin-right: 12px;
-
             font-size: 15px;
         }
 
@@ -951,9 +821,7 @@
             width: 31px;
             height: 31px;
             min-width: 31px;
-
             margin-right: 7px;
-
             font-size: 12px;
         }
 
@@ -961,9 +829,7 @@
             width: 31px;
             height: 31px;
             min-width: 31px;
-
             margin-right: 7px;
-
             font-size: 12px;
         }
 
@@ -1230,7 +1096,7 @@
                     <button
                         type="button"
                         class="filter-option"
-                        data-status="Regular"
+                        data-status="Below Treshold"
                     >
 
                         <span class="filter-option-icon">
@@ -1241,7 +1107,7 @@
 
                         <span>
 
-                            Regular
+                            Below Treshold
 
                         </span>
 
@@ -1833,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
      * Prevent clicks in
-      the dropdown
+     * the dropdown
      * from closing it immediately.
      */
 

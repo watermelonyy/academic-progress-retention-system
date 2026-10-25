@@ -1,11 +1,11 @@
-<tbody>
+student_table.blade "<tbody>
 
 @forelse($students as $student)
 
     @php
         $status =
         optional($student->latestStatus)->academic_status
-        ?? 'Regular';
+        ?? 'Below Treshold';
     @endphp
 
     <tr>
@@ -23,10 +23,10 @@
 
         <td>
 
-            @if($status == 'Regular')
+            @if($status == 'Below Treshold')
 
                 <span class="badge bg-success">
-                    Regular
+                    Below Treshold
                 </span>
 
             @elseif($status == 'Academic Warning')

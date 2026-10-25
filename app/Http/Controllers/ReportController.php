@@ -22,17 +22,6 @@ class ReportController extends Controller
             return redirect()->route('login');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GET ALL SEMESTERS
-        |--------------------------------------------------------------------------
-        | PostgreSQL sorting:
-        | 2025-2026
-        | 2024-2025
-        | 2023-2024
-        |--------------------------------------------------------------------------
-        */
-
         $semesters = Semester::orderByRaw("
             CAST(split_part(school_year, '-', 1) AS INTEGER) DESC
         ")
@@ -47,12 +36,6 @@ class ReportController extends Controller
             END ASC
         ")
         ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | UNIQUE SCHOOL YEARS
-        |--------------------------------------------------------------------------
-        */
 
         $schoolYears = $semesters
             ->pluck('school_year')
@@ -108,7 +91,6 @@ class ReportController extends Controller
             ],
         ]);
 
-
         $reportType = $validated['report_type'];
         $schoolYear = $validated['school_year'] ?? null;
         $semesterId = $validated['semester_id'] ?? null;
@@ -138,8 +120,7 @@ class ReportController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | IF BOTH SCHOOL YEAR AND SEMESTER WERE SELECTED,
-            | MAKE SURE THEY MATCH.
+            | VERIFY SCHOOL YEAR AND SEMESTER
             |--------------------------------------------------------------------------
             */
 
@@ -161,10 +142,8 @@ class ReportController extends Controller
         | BASE QUERY
         |--------------------------------------------------------------------------
         |
-        | IMPORTANT:
-        | We query STUDENT STATUS HISTORY, not latestStatus().
-        |
-        | This is what allows the report to show historical records.
+        | Retrieve historical status records and their related student
+        | and semester information.
         |--------------------------------------------------------------------------
         */
 
@@ -220,28 +199,52 @@ class ReportController extends Controller
 
             if ($academicStatus) {
 
-                $statusQuery->where(
-                    'academic_status',
-                    $academicStatus
-                );
+                /*
+                |--------------------------------------------------------------------------
+                | FIX: MATCH BELOW TRESHOLD STATUS ROBUSTLY
+                |--------------------------------------------------------------------------
+                |
+                | Accept both "Below Treshold" and "Below Threshold".
+                | Ignore capitalization and leading/trailing spaces.
+                | Other academic statuses are also matched without
+                | capitalization or surrounding-space differences.
+                |--------------------------------------------------------------------------
+                */
+
+                $normalizedStatus = strtolower(trim($academicStatus));
+
+                if (in_array($normalizedStatus, [
+                    'below treshold',
+                    'below threshold'
+                ], true)) {
+
+                    $statusQuery->whereRaw(
+                        "LOWER(TRIM(academic_status)) IN (?, ?)",
+                        [
+                            'below treshold',
+                            'below threshold'
+                        ]
+                    );
+
+                } else {
+
+                    $statusQuery->whereRaw(
+                        "LOWER(TRIM(academic_status)) = ?",
+                        [$normalizedStatus]
+                    );
+
+                }
             }
 
             $records = $statusQuery
                 ->orderBy('student_id')
                 ->get();
 
-            /*
-            |--------------------------------------------------------------------------
-            | REPORT TITLE
-            |--------------------------------------------------------------------------
-            */
-
             $reportTitle = 'Students by Academic Status';
 
             if ($academicStatus) {
                 $reportTitle .= ': ' . $academicStatus;
             }
-
 
             $reportSubtitle = $this->buildPeriodText(
                 $schoolYear,
@@ -261,20 +264,6 @@ class ReportController extends Controller
             $records = $statusQuery
                 ->orderBy('student_id')
                 ->get();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | DETERMINE WHETHER THE STUDENT DID NOT IMPROVE
-            |--------------------------------------------------------------------------
-            |
-            | The comparison follows the same basic logic used by the
-            | StudentController:
-            |
-            | current failure percentage >= previous failure percentage
-            |
-            |--------------------------------------------------------------------------
-            */
 
             $records = $records->filter(function ($currentRecord) {
 
@@ -298,7 +287,6 @@ class ReportController extends Controller
             })
             ->values();
 
-
             $reportTitle = 'Students With No Academic Improvement';
 
             $reportSubtitle = $this->buildPeriodText(
@@ -316,17 +304,6 @@ class ReportController extends Controller
 
         else {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Existing priority_alert field is used.
-            |--------------------------------------------------------------------------
-            |
-            | We do NOT create another evaluation rule.
-            | The report uses the existing priority alert recorded
-            | in student_status_history.
-            |--------------------------------------------------------------------------
-            */
-
             $statusQuery->where(
                 'priority_alert',
                 true
@@ -335,7 +312,6 @@ class ReportController extends Controller
             $records = $statusQuery
                 ->orderBy('student_id')
                 ->get();
-
 
             $reportTitle = 'Students With Serious Academic Concerns';
 
@@ -351,10 +327,8 @@ class ReportController extends Controller
         | REMOVE DUPLICATE STUDENT RECORDS
         |--------------------------------------------------------------------------
         |
-        | If the query is not restricted to one semester, a student may
-        | have more than one historical evaluation.
-        |
-        | For the report we keep one record per student.
+        | When no semester is selected, keep the most recent matching
+        | record for each student.
         |--------------------------------------------------------------------------
         */
 
@@ -429,13 +403,6 @@ class ReportController extends Controller
         /*
         |--------------------------------------------------------------------------
         | LANDSCAPE
-        |--------------------------------------------------------------------------
-        |
-        | Landscape is used so the report has enough room for:
-        | Complete Name
-        | Year Level
-        | Academic Status
-        | Failure Percentage
         |--------------------------------------------------------------------------
         */
 
