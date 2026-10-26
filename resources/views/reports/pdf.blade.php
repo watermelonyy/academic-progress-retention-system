@@ -120,26 +120,21 @@
 
         /* TABLE COLUMNS */
         .no {
-            width: 7%;
+            width: 8%;
             text-align: center;
         }
 
         .name {
-            width: 38%;
-        }
-
-        .year {
-            width: 15%;
-            text-align: center;
+            width: 42%;
         }
 
         .status {
-            width: 25%;
+            width: 30%;
             text-align: center;
         }
 
         .percentage {
-            width: 15%;
+            width: 20%;
             text-align: center;
         }
 
@@ -287,7 +282,6 @@
                         <tr>
                             <th class="no">No.</th>
                             <th class="name">Complete Name</th>
-                            <th class="year">Year Level</th>
                             <th class="status">Academic Standing / Status</th>
                             <th class="percentage">Failure Percentage</th>
                         </tr>
@@ -312,11 +306,6 @@
                                     );
                                 }
 
-                                /* YEAR LEVEL */
-                                $studentYearLevel = $student
-                                    ? ($student->current_year_level ?? '—')
-                                    : '—';
-
                                 /* ACADEMIC STATUS */
                                 $status = $record->academic_status ?? '—';
 
@@ -329,7 +318,6 @@
                             <tr>
                                 <td class="no">{{ $index + 1 }}</td>
                                 <td class="name">{{ $completeName ?: '—' }}</td>
-                                <td class="year">{{ $studentYearLevel }}</td>
                                 <td class="status">{{ $status }}</td>
                                 <td class="percentage">{{ $failurePercentage }}</td>
                             </tr>
@@ -348,14 +336,13 @@
                     <tr>
                         <th class="no">No.</th>
                         <th class="name">Complete Name</th>
-                        <th class="year">Year Level</th>
                         <th class="status">Academic Standing / Status</th>
                         <th class="percentage">Failure Percentage</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="5" class="empty">
+                        <td colspan="4" class="empty">
                             No students were found for the selected report criteria.
                         </td>
                     </tr>
@@ -363,14 +350,15 @@
             </table>
 
         @endforelse
-<p></p>
-<p></p>
-<p></p>
-<p></p>
-<p></p>
-<p></p>
-<p></p>
-<p></p>
+        <p></p>
+        <p></p>
+        <p></p>
+        <p></p>
+        <p></p>
+        <p></p>
+        <p></p>
+        <p></p>
+
         {{-- CLOSING --}}
         <div class="closing">
             Sincerely,
@@ -378,6 +366,7 @@
 
         <p></p>
         <p></p>
+
         {{-- DEPARTMENT HEAD SIGNATURE --}}
         <div class="signature">
             <div class="signature-name">
