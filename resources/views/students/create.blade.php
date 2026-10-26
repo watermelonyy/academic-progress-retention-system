@@ -704,7 +704,7 @@ input[type=number] {
 
                     <button
                         type="button"
-                        class="btn btn-primary"
+                        class="btn btn-success"
                         onclick="goToStep(2)"
                     >
                         NEXT
