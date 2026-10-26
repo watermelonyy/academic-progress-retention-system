@@ -96,7 +96,7 @@
 
                     <form
                         method="POST"
-                        action="{{ route('login.process') }}"
+                        action="{{ secure_url('login') }}"
                     >
 
                         @csrf
