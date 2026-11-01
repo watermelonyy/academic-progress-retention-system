@@ -1096,7 +1096,7 @@
                     <button
                         type="button"
                         class="filter-option"
-                        data-status="Below Treshold"
+                        data-status="Below Threshold"
                     >
 
                         <span class="filter-option-icon">
@@ -1107,7 +1107,7 @@
 
                         <span>
 
-                            Below Treshold
+                            Below Threshold
 
                         </span>
 

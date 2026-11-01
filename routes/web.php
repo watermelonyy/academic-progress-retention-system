@@ -18,6 +18,13 @@ use App\Http\Controllers\SemesterController;
 
 Route::get(
     '/',
+    function () {
+        return redirect()->route('login');
+    }
+);
+
+Route::get(
+    '/login',
     [AuthController::class, 'showLogin']
 )->name('login');
 
@@ -91,18 +98,16 @@ Route::middleware(['checklogin', 'autologout'])->group(function () {
     )->name('reports.generate');
 
 
-    
-/*
-|--------------------------------------------------------------------------
-| STUDENT RESIDENCY PREDICTION
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT RESIDENCY PREDICTION
+    |--------------------------------------------------------------------------
+    */
 
-Route::get(
-    '/students/{id}/residency-prediction',
-    [StudentController::class, 'residencyPrediction']
-)->name('students.residencyPrediction');
-
+    Route::get(
+        '/students/{id}/residency-prediction',
+        [StudentController::class, 'residencyPrediction']
+    )->name('students.residencyPrediction');
 
 
     /*
@@ -186,24 +191,20 @@ Route::get(
         [NoticeController::class, 'generate']
     )->name('notices.generate');
 
-
     Route::get(
         '/students/{id}/notice/{notice}/view',
         [NoticeController::class, 'view']
     )->name('notices.view');
-
 
     Route::get(
         '/students/{id}/notice/{notice}/print',
         [NoticeController::class, 'print']
     )->name('notices.print');
 
-
     Route::get(
         '/students/{id}/notice/{notice}/download',
         [NoticeController::class, 'download']
     )->name('notices.download');
-
 
     Route::post(
         '/students/{id}/notice/probation-preview',

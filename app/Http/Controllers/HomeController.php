@@ -29,10 +29,10 @@ class HomeController extends Controller
         | NORMALIZE STUDENT STATUS
         |--------------------------------------------------------------------------
         |
-        | Students without an evaluation are considered Below Treshold.
+        | Students without an evaluation are considered Below Threshold.
         | Legacy academic status values are normalized where appropriate.
         | Residency Risk is kept separate and is NOT converted to
-        | Below Treshold.
+        | Below Threshold.
         |
         */
 
@@ -41,15 +41,16 @@ class HomeController extends Controller
             $status = trim(
                 (string) (
                     optional($student->latestStatus)->academic_status
-                    ?? 'Below Treshold'
+                    ?? 'Below Threshold'
                 )
             );
 
-            if (in_array($status, [
-                'Regular',
-                'Below Threshold'
-            ], true)) {
-                $status = 'Below Treshold';
+           if (in_array($status, [
+    'Regular',
+    'Below Threshold',
+    'Below Treshold'
+], true)) {
+                $status = 'Below Threshold';
             }
 
             if ($status === 'For Shifting Out') {
@@ -110,7 +111,7 @@ class HomeController extends Controller
 
         $regularStudents = $students
             ->filter(function ($student) {
-                return $student->dashboard_status === 'Below Treshold';
+                return $student->dashboard_status === 'Below Threshold';
             })
             ->values();
 
@@ -260,7 +261,7 @@ class HomeController extends Controller
             | NORMALIZE ACADEMIC STATUS FOR PRIORITY ALERT DISPLAY
             |--------------------------------------------------------------------------
             |
-            | Do not convert Residency Risk into Below Treshold.
+            | Do not convert Residency Risk into Below Threshold.
             |
             */
 
@@ -268,7 +269,7 @@ class HomeController extends Controller
                 'Regular',
                 'Below Threshold'
             ], true)) {
-                $priorityStatus = 'Below Treshold';
+                $priorityStatus = 'Below Threshold';
             }
 
             if ($priorityStatus === 'For Shifting Out') {

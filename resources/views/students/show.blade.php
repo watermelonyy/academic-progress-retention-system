@@ -8,7 +8,7 @@
 | CURRENT / MOST RECENT EVALUATED SEMESTER
 ========================================================= */
 
-$currentStatus = optional($latestStatus)->academic_status ?? 'Below Treshold';
+$currentStatus = optional($latestStatus)->academic_status ?? 'Below Threshold';
 
 /*
 |--------------------------------------------------------------------------
@@ -28,7 +28,7 @@ if ($currentStatus === 'For Shifting Out') {
 */
 
 if ($currentStatus === 'Residency Risk') {
-    $currentStatus = 'Below Treshold';
+    $currentStatus = 'Below Threshold';
 }
 
 $currentSemesterId = optional($latestStatus)->semester_id;
@@ -1638,10 +1638,10 @@ input[type=number] {
                     Academic Status
                 </span>
 
-                @if($currentStatus === 'Below Treshold')
+                @if($currentStatus === 'Below Threshold')
 
                     <span class="badge bg-success status-badge">
-                        Below Treshold
+                        Below Threshold
                     </span>
 
                 @elseif($currentStatus === 'Academic Warning')

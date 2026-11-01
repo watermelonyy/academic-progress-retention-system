@@ -200,40 +200,34 @@ class ReportController extends Controller
             if ($academicStatus) {
 
                 /*
-                |--------------------------------------------------------------------------
-                | FIX: MATCH BELOW TRESHOLD STATUS ROBUSTLY
-                |--------------------------------------------------------------------------
-                |
-                | Accept both "Below Treshold" and "Below Threshold".
-                | Ignore capitalization and leading/trailing spaces.
-                | Other academic statuses are also matched without
-                | capitalization or surrounding-space differences.
-                |--------------------------------------------------------------------------
-                */
+|--------------------------------------------------------------------------
+| MATCH BELOW THRESHOLD STATUS
+|--------------------------------------------------------------------------
+| Accept both the correctly spelled and previously misspelled
+| database values.
+|--------------------------------------------------------------------------
+*/
 
-                $normalizedStatus = strtolower(trim($academicStatus));
+$normalizedStatus = strtolower(trim($academicStatus));
 
-                if (in_array($normalizedStatus, [
-                    'below treshold',
-                    'below threshold'
-                ], true)) {
+if ($normalizedStatus === 'below threshold') {
 
-                    $statusQuery->whereRaw(
-                        "LOWER(TRIM(academic_status)) IN (?, ?)",
-                        [
-                            'below treshold',
-                            'below threshold'
-                        ]
-                    );
+    $statusQuery->whereRaw(
+        "LOWER(TRIM(academic_status)) IN (?, ?)",
+        [
+            'below threshold',
+            'below treshold'
+        ]
+    );
 
-                } else {
+} else {
 
-                    $statusQuery->whereRaw(
-                        "LOWER(TRIM(academic_status)) = ?",
-                        [$normalizedStatus]
-                    );
+    $statusQuery->whereRaw(
+        "LOWER(TRIM(academic_status)) = ?",
+        [$normalizedStatus]
+    );
 
-                }
+}
             }
 
             $records = $statusQuery

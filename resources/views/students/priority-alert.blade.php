@@ -725,8 +725,8 @@
                                         <span class="evaluation-label">Status</span>
                                         <span class="evaluation-value">
 
-                                            @if($previousEvaluation->academic_status == 'Below Treshold')
-                                                <span class="badge bg-success status-badge">Below Treshold</span>
+                                            @if($previousEvaluation->academic_status == 'Below Threshold')
+                                                <span class="badge bg-success status-badge">Below Threshold</span>
                                             @elseif($previousEvaluation->academic_status == 'Academic Warning')
                                                 <span class="badge bg-warning text-dark status-badge">Academic Warning</span>
                                             @elseif($previousEvaluation->academic_status == 'Probation')
@@ -791,8 +791,8 @@
                                         <span class="evaluation-label">Status</span>
                                         <span class="evaluation-value">
 
-                                            @if($recentEvaluation->academic_status == 'Below Treshold')
-                                                <span class="badge bg-success status-badge">Below Treshold</span>
+                                            @if($recentEvaluation->academic_status == 'Below Threshold')
+                                                <span class="badge bg-success status-badge">Below Threshold</span>
                                             @elseif($recentEvaluation->academic_status == 'Academic Warning')
                                                 <span class="badge bg-warning text-dark status-badge">Academic Warning</span>
                                             @elseif($recentEvaluation->academic_status == 'Probation')

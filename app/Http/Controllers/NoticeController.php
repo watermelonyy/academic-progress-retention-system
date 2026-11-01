@@ -27,7 +27,7 @@ class NoticeController extends Controller
             ->latest('created_at')
             ->first();
 
-        $status = optional($latestStatus)->academic_status ?? 'Below Treshold';
+        $status = optional($latestStatus)->academic_status ?? 'Below Threshold';
 
         $failedSubjects = AcademicGrade::with([
             'subject',

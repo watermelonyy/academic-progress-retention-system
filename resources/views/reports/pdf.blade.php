@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -270,10 +271,54 @@
         {{-- STUDENT TABLES: ONE TABLE PER YEAR LEVEL --}}
         @forelse ($yearLevelGroups as $yearLevel => $groupRecords)
 
+            @php
+                /*
+                |--------------------------------------------------------------------------
+                | DISPLAY THE CORRECT ORDINAL YEAR LEVEL
+                |--------------------------------------------------------------------------
+                */
+
+                $normalizedYearLevel = strtolower(trim((string) $yearLevel));
+
+                if (
+                    str_contains($normalizedYearLevel, '1st') ||
+                    str_contains($normalizedYearLevel, 'first') ||
+                    preg_match('/(^|\D)1(\D|$)/', $normalizedYearLevel)
+                ) {
+                    $yearLevelLabel = '1st Year Level';
+
+                } elseif (
+                    str_contains($normalizedYearLevel, '2nd') ||
+                    str_contains($normalizedYearLevel, 'second') ||
+                    preg_match('/(^|\D)2(\D|$)/', $normalizedYearLevel)
+                ) {
+                    $yearLevelLabel = '2nd Year Level';
+
+                } elseif (
+                    str_contains($normalizedYearLevel, '3rd') ||
+                    str_contains($normalizedYearLevel, 'third') ||
+                    preg_match('/(^|\D)3(\D|$)/', $normalizedYearLevel)
+                ) {
+                    $yearLevelLabel = '3rd Year Level';
+
+                } elseif (
+                    str_contains($normalizedYearLevel, '4th') ||
+                    str_contains($normalizedYearLevel, 'fourth') ||
+                    preg_match('/(^|\D)4(\D|$)/', $normalizedYearLevel)
+                ) {
+                    $yearLevelLabel = '4th Year Level';
+
+                } else {
+                    $yearLevelLabel = $yearLevel === 'Unspecified Year Level'
+                        ? 'Unspecified Year Level'
+                        : $yearLevel . ' Year Level';
+                }
+            @endphp
+
             <div class="year-level-section">
 
                 <div class="year-level-heading">
-                    {{ $yearLevel }}
+                    {{ $yearLevelLabel }}
                 </div>
 
                 <table class="student-table">

@@ -379,7 +379,7 @@
                 <div class="status-content">
 
                     <span class="status-label">
-                        Below Treshold
+                        Below Threshold
                     </span>
 
                     <strong>
@@ -742,7 +742,7 @@
                                             $history->academic_status;
 
                                         if ($recentStatus === 'Regular') {
-    $recentStatus = 'Below Treshold';
+    $recentStatus = 'Below Threshold';
 }
 
 
@@ -856,10 +856,10 @@
 
                                         <td>
 
-                                            @if($recentStatus === 'Below Treshold')
+                                            @if($recentStatus === 'Below Threshold')
 
                                                 <span class="status-pill regular-pill">
-                                                    Below Treshold
+                                                    Below Threshold
                                                 </span>
 
                                             @elseif($recentStatus === 'Academic Warning')
@@ -1019,7 +1019,7 @@
                     <div>
 
                         <h5>
-                            Below Treshold Students
+                            Below Threshold Students
                         </h5>
 
                         <span>
@@ -2891,7 +2891,7 @@ document.addEventListener(
 
                         labels: [
 
-                            'Below Treshold',
+                            'Below Threshold',
 
                             'Academic Warning',
 

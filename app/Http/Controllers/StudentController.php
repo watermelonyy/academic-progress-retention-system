@@ -120,12 +120,12 @@ public function index(Request $request)
 
             $latestEvaluation->priority_alert = $priorityAlert;
 
-            if (in_array(
-                $latestEvaluation->academic_status,
-                ['Regular', 'Residency Risk'],
-                true
-            )) {
-                $latestEvaluation->academic_status = 'Below Treshold';
+          if (in_array(
+    $latestEvaluation->academic_status,
+    ['Regular', 'Residency Risk', 'Below Treshold'],
+    true
+)) {
+                $latestEvaluation->academic_status = 'Below Threshold';
             }
 
             $student->setRelation('latestStatus', $latestEvaluation);
@@ -621,17 +621,17 @@ public function index(Request $request)
         | Legacy status compatibility
         |
         | Older evaluations may still store Regular. Display it as
-        | Below Treshold without changing historical database records.
+        | Below Threshold without changing historical database records.
         */
         if (
             $latestStatus &&
-            in_array(
-                $latestStatus->academic_status,
-                ['Regular', 'Residency Risk'],
-                true
-            )
+           in_array(
+    $latestStatus->academic_status,
+    ['Regular', 'Residency Risk', 'Below Treshold'],
+    true
+)
         ) {
-            $latestStatus->academic_status = 'Below Treshold';
+            $latestStatus->academic_status = 'Below Threshold';
         } 
  
  
@@ -1706,7 +1706,7 @@ public function residencyPrediction(int $id)
             | 
             | The admin enters only the failed subjects for this semester. 
             | A student may have zero failed subjects, in which case the 
-            | evaluation is still recorded as 0% failure and Below Treshold. 
+            | evaluation is still recorded as 0% failure and Below Threshold. 
             | 
             */ 
  
@@ -1983,7 +1983,7 @@ public function residencyPrediction(int $id)
     | 
     | 50% - 99.99% = Probation 
     | 25% - 49.99% = Academic Warning 
-    | Below 25% = Below Treshold 
+    | Below 25% = Below Threshold 
     | 
     | PRIORITY ALERT 
     | 
@@ -2168,7 +2168,7 @@ public function residencyPrediction(int $id)
  
         } else { 
  
-            $status = 'Below Treshold'; 
+            $status = 'Below Threshold'; 
         } 
  
  
@@ -4825,7 +4825,7 @@ public function priorityAlert(int $id)
 
             // Treat the old status name as the renamed status.
             $statusToFind =
-                'Below Treshold';
+                'Below Threshold';
         }
 
 
@@ -4844,11 +4844,15 @@ public function priorityAlert(int $id)
 
                     // Include legacy Regular records in the renamed status list.
                     if (
-                        $statusToFind === 'Below Treshold' &&
-                        $studentStatus === 'Regular'
-                    ) {
-                        return true;
-                    }
+    $statusToFind === 'Below Threshold' &&
+    in_array(
+        $studentStatus,
+        ['Regular', 'Below Treshold'],
+        true
+    )
+) {
+    return true;
+}
 
                     return $studentStatus === $statusToFind;
 
