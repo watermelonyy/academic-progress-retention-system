@@ -2,143 +2,6 @@
 
 @section('content')
 
-@php
-
-    /*
-    |--------------------------------------------------------------------------
-    | PRIORITY ALERT DISPLAY
-    |--------------------------------------------------------------------------
-    |
-    | Priority Alert is based ONLY on performance comparison.
-    |
-    | Current failure < previous failure
-    |     = Improvement
-    |     = NO Priority Alert
-    |
-    | Current failure = previous failure
-    |     = No improvement
-    |     = Priority Alert
-    |
-    | Current failure > previous failure
-    |     = Worse
-    |     = Priority Alert
-    |
-    | A student with only one evaluation can NEVER be a Priority Alert.
-    |
-    */
-
-    $dashboardPriorityStudents = collect();
-
-
-    $allDashboardHistories =
-        \App\Models\StudentStatusHistory::with([
-            'student',
-            'semester'
-        ])
-        ->orderByDesc('semester_id')
-        ->orderByDesc('status_id')
-        ->get()
-        ->groupBy('student_id');
-
-
-    foreach (
-        $allDashboardHistories
-        as $studentHistories
-    ) {
-
-        $evaluations =
-            $studentHistories
-                ->sortByDesc(function ($history) {
-
-                    return [
-                        (int) $history->semester_id,
-                        (int) $history->status_id
-                    ];
-
-                })
-                ->values();
-
-
-        $latestEvaluation =
-            $evaluations->first();
-
-
-        $previousEvaluation =
-            $evaluations->skip(1)->first();
-
-
-        if (
-            !$latestEvaluation ||
-            !$previousEvaluation ||
-            !$latestEvaluation->student
-        ) {
-
-            continue;
-
-        }
-
-
-        $currentFailure =
-            (float) $latestEvaluation->failure_percentage;
-
-
-        $previousFailure =
-            (float) $previousEvaluation->failure_percentage;
-
-
-        if (
-            $currentFailure <
-            $previousFailure
-        ) {
-
-            continue;
-
-        }
-
-
-        $student =
-            $latestEvaluation->student;
-
-
-        $dashboardStatus =
-            $latestEvaluation->academic_status;
-
-
-        if (
-            $dashboardStatus ===
-            'For Shifting Out'
-        ) {
-
-            $dashboardStatus =
-                'Shifting Out';
-
-        }
-
-
-        $student->dashboard_status =
-            $dashboardStatus;
-
-
-        $student->priority_alert =
-            true;
-
-
-        $dashboardPriorityStudents->push(
-            $student
-        );
-
-    }
-
-
-    $priorityStudents =
-        $dashboardPriorityStudents->values();
-
-
-    $priorityAlerts =
-        $priorityStudents->count();
-
-@endphp
-
 
 <div class="dashboard-page">
 
@@ -155,7 +18,7 @@
                 <div class="dashboard-logo">
 
                     <img
-                        src="{{ asset('images/ite-logo.png') }}"
+                        src="{{ asset('ite-logo.png') }}"
                         alt="System Logo"
                     >
 
@@ -286,7 +149,9 @@
                         {{ $priorityAlerts }}
                     </strong>
 
-                    
+                    <small>
+                        Requires priority attention
+                    </small>
 
                 </div>
 
@@ -325,7 +190,9 @@
                         {{ $residencyRisk }}
                     </strong>
 
-    
+                    <small>
+                        Near maximum residency
+                    </small>
 
                 </div>
 
@@ -379,14 +246,16 @@
                 <div class="status-content">
 
                     <span class="status-label">
-                        Below Threshold
+                        Below Treshold
                     </span>
 
                     <strong>
                         {{ $regular }}
                     </strong>
 
-        
+                    <small>
+                        Good academic standing
+                    </small>
 
                 </div>
 
@@ -425,7 +294,9 @@
                         {{ $warning }}
                     </strong>
 
-                    
+                    <small>
+                        Needs academic improvement
+                    </small>
 
                 </div>
 
@@ -464,7 +335,9 @@
                         {{ $probation }}
                     </strong>
 
-                   
+                    <small>
+                        Requires intervention
+                    </small>
 
                 </div>
 
@@ -503,7 +376,9 @@
                         {{ $shifting }}
                     </strong>
 
-                   
+                    <small>
+                        Subject to academic action
+                    </small>
 
                 </div>
 
@@ -627,7 +502,17 @@
 
                         </div>
 
-                        
+                        <div class="school-year-note">
+
+                            <i class="fa fa-circle-info"></i>
+
+                            <span>
+                                Shows the number of unique students flagged with
+                                Academic Warning, Probation, or Shifting Out
+                                during each school year.
+                            </span>
+
+                        </div>
 
                     @else
 
@@ -741,10 +626,6 @@
                                         $recentStatus =
                                             $history->academic_status;
 
-                                        if ($recentStatus === 'Regular') {
-    $recentStatus = 'Below Threshold';
-}
-
 
                                         if (
                                             $recentStatus ===
@@ -856,10 +737,10 @@
 
                                         <td>
 
-                                            @if($recentStatus === 'Below Threshold')
+                                            @if($recentStatus === 'Below Treshold')
 
                                                 <span class="status-pill regular-pill">
-                                                    Below Threshold
+                                                    Below Treshold
                                                 </span>
 
                                             @elseif($recentStatus === 'Academic Warning')
@@ -1019,7 +900,7 @@
                     <div>
 
                         <h5>
-                            Below Threshold Students
+                            Below Treshold Students
                         </h5>
 
                         <span>
@@ -2891,7 +2772,7 @@ document.addEventListener(
 
                         labels: [
 
-                            'Below Threshold',
+                            'Below Treshold',
 
                             'Academic Warning',
 

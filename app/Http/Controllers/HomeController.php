@@ -11,107 +11,55 @@ class HomeController extends Controller
     {
         /*
         |--------------------------------------------------------------------------
-        | GET ALL EVALUATIONS
+        | GET ALL STUDENTS WITH THEIR LATEST ACADEMIC STATUS
         |--------------------------------------------------------------------------
-        |
-        | Use one consistent evaluation source for the dashboard.
-        | Latest evaluation:
-        | 1. Highest semester_id.
-        | 2. Highest status_id if semester_id is the same.
-        |
         */
 
-        $allEvaluations = StudentStatusHistory::with([
-            'student',
-            'semester'
+        $students = Student::with([
+            'latestStatus.semester',
+            'statusHistory'
         ])
-            ->orderByDesc('semester_id')
-            ->orderByDesc('status_id')
-            ->get();
+        ->orderBy('last_name')
+        ->orderBy('first_name')
+        ->get();
 
 
         /*
         |--------------------------------------------------------------------------
-        | GROUP EVALUATIONS BY STUDENT
-        |--------------------------------------------------------------------------
-        */
-
-        $historiesByStudent = $allEvaluations
-            ->groupBy('student_id');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | NORMALIZE ACADEMIC STATUS
+        | NORMALIZE STUDENT STATUS
         |--------------------------------------------------------------------------
         |
-        | Regular, Below Treshold, and old Residency Risk records
-        | are treated as Below Threshold.
-        |
-        | Residency prediction remains a separate feature.
+        | Students without an evaluation are considered Below Treshold.
+        | Old database values such as "For Shifting Out" are converted
+        | to the current display value "Shifting Out".
         |
         */
 
-        $normalizeStatus = function ($status) {
+        $students = $students->map(function ($student) {
 
-            $status = trim((string) $status);
+            $status = optional(
+                $student->latestStatus
+            )->academic_status ?? 'Below Treshold';
 
-            $normalized = strtolower($status);
 
-            if (in_array($normalized, [
-                'regular',
-                'below threshold',
-                'below treshold',
-                'residency risk'
-            ], true)) {
+            if ($status === 'For Shifting Out') {
 
-                return 'Below Threshold';
+                $status = 'Shifting Out';
+
             }
 
-            if ($normalized === 'for shifting out') {
 
-                return 'Shifting Out';
+            /*
+            | Old records may contain Residency Risk as an academic status.
+            | Residency Risk is now a warning only, so keep the actual
+            | academic status as Below Treshold for dashboard purposes.
+            */
+            if ($status === 'Residency Risk') {
+
+                $status = 'Below Treshold';
+
             }
 
-            return $status;
-        };
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET ALL STUDENTS
-        |--------------------------------------------------------------------------
-        */
-
-        $students = Student::orderBy('last_name')
-            ->orderBy('first_name')
-            ->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | ASSIGN EACH STUDENT'S LATEST ACADEMIC STATUS
-        |--------------------------------------------------------------------------
-        */
-
-        $students = $students->map(function ($student) use (
-            $historiesByStudent,
-            $normalizeStatus
-        ) {
-
-            $studentHistories = $historiesByStudent->get(
-                $student->student_id,
-                collect()
-            );
-
-            $latestEvaluation = $studentHistories->first();
-
-            $status = $latestEvaluation
-                ? $normalizeStatus($latestEvaluation->academic_status)
-                : 'Below Threshold';
-
-            $student->latest_dashboard_evaluation =
-                $latestEvaluation;
 
             $student->dashboard_status = $status;
 
@@ -125,7 +73,10 @@ class HomeController extends Controller
         | RESIDENCY RISK PROJECTION
         |--------------------------------------------------------------------------
         |
-        | Residency Risk is calculated separately from academic status.
+        | Residency Risk is a warning only. It is NOT an academic status.
+        |
+        | Use the exact same residency calculation used by StudentController.
+        | This keeps the Student List and Home dashboard synchronized.
         |
         */
 
@@ -133,9 +84,8 @@ class HomeController extends Controller
 
         $students->each(function ($student) use ($studentController) {
 
-            $projection = $studentController->getResidencyProjection(
-                $student
-            );
+            $projection =
+                $studentController->getResidencyProjection($student);
 
             $student->residency_risk =
                 $projection['residency_risk'];
@@ -163,19 +113,14 @@ class HomeController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | STUDENTS BY LATEST ACADEMIC STATUS
+        | STUDENTS BY CURRENT ACADEMIC STATUS
         |--------------------------------------------------------------------------
-        |
-        | Each student is included in only one academic status group.
-        | Only the student's latest evaluation determines the group.
-        |
         */
 
         $regularStudents = $students
             ->filter(function ($student) {
 
-                return $student->dashboard_status ===
-                    'Below Threshold';
+                return $student->dashboard_status === 'Below Treshold';
 
             })
             ->values();
@@ -184,8 +129,7 @@ class HomeController extends Controller
         $warningStudents = $students
             ->filter(function ($student) {
 
-                return $student->dashboard_status ===
-                    'Academic Warning';
+                return $student->dashboard_status === 'Academic Warning';
 
             })
             ->values();
@@ -194,8 +138,7 @@ class HomeController extends Controller
         $probationStudents = $students
             ->filter(function ($student) {
 
-                return $student->dashboard_status ===
-                    'Probation';
+                return $student->dashboard_status === 'Probation';
 
             })
             ->values();
@@ -204,8 +147,7 @@ class HomeController extends Controller
         $shiftingStudents = $students
             ->filter(function ($student) {
 
-                return $student->dashboard_status ===
-                    'Shifting Out';
+                return $student->dashboard_status === 'Shifting Out';
 
             })
             ->values();
@@ -216,8 +158,10 @@ class HomeController extends Controller
         | RESIDENCY RISK STUDENTS
         |--------------------------------------------------------------------------
         |
-        | This collection is based on the separate residency projection,
-        | not on the student's academic status.
+        | IMPORTANT:
+        | Residency Risk is NOT checked through dashboard_status.
+        | It is calculated separately by StudentController and stored as
+        | the temporary residency_risk property on each student model.
         |
         */
 
@@ -234,9 +178,6 @@ class HomeController extends Controller
         |--------------------------------------------------------------------------
         | STATUS COUNTS
         |--------------------------------------------------------------------------
-        |
-        | The card counts and modal lists use the SAME collections.
-        |
         */
 
         $regular = $regularStudents->count();
@@ -255,11 +196,14 @@ class HomeController extends Controller
         | PRIORITY ALERTS
         |--------------------------------------------------------------------------
         |
-        | Current failure < Previous failure = Improvement
-        | Current failure = Previous failure = Priority Alert
-        | Current failure > Previous failure = Priority Alert
+        | Compare each student's two most recent evaluations.
         |
-        | A student with only one evaluation cannot be a Priority Alert.
+        | Current failure percentage < Previous = Improved
+        | Current failure percentage >= Previous = Priority Alert
+        |
+        | IMPORTANT:
+        | semester_id is NOT used for chronological sorting because the
+        | semester IDs in this database do not follow school-year order.
         |
         */
 
@@ -267,79 +211,111 @@ class HomeController extends Controller
 
         foreach ($students as $student) {
 
-            $evaluations = $historiesByStudent->get(
-                $student->student_id,
-                collect()
-            );
+            $evaluations = $student->statusHistory
+                ->loadMissing('semester')
+                ->sort(function ($a, $b) {
 
+                    // Compare the starting year of each school year.
+                    $aYear = (int) substr(
+                        (string) optional($a->semester)->school_year,
+                        0,
+                        4
+                    );
+
+                    $bYear = (int) substr(
+                        (string) optional($b->semester)->school_year,
+                        0,
+                        4
+                    );
+
+                    if ($aYear !== $bYear) {
+                        return $bYear <=> $aYear;
+                    }
+
+                    // Within the same school year, 2nd Semester is newer.
+                    $semesterOrder = [
+                        '1st Semester' => 1,
+                        '2nd Semester' => 2,
+                    ];
+
+                    $aSemester = $semesterOrder[
+                        optional($a->semester)->semester_name
+                    ] ?? 0;
+
+                    $bSemester = $semesterOrder[
+                        optional($b->semester)->semester_name
+                    ] ?? 0;
+
+                    if ($aSemester !== $bSemester) {
+                        return $bSemester <=> $aSemester;
+                    }
+
+                    // If both evaluations are from the same semester,
+                    // the newest timestamp/status ID comes first.
+                    $aTimestamp = optional($a->created_at)->timestamp ?? 0;
+                    $bTimestamp = optional($b->created_at)->timestamp ?? 0;
+
+                    if ($aTimestamp !== $bTimestamp) {
+                        return $bTimestamp <=> $aTimestamp;
+                    }
+
+                    return (int) $b->status_id <=> (int) $a->status_id;
+
+                })
+                ->values();
 
             $latestEvaluation = $evaluations->first();
+            $previousEvaluation = $evaluations->skip(1)->first();
 
-            $previousEvaluation = $evaluations
-                ->skip(1)
-                ->first();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | STUDENT MUST HAVE AT LEAST TWO EVALUATIONS
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                !$latestEvaluation ||
-                !$previousEvaluation
-            ) {
-
+            // A student needs at least two evaluations for comparison.
+            if (!$latestEvaluation || !$previousEvaluation) {
                 continue;
-
             }
 
+            $currentFailure = (float) $latestEvaluation->failure_percentage;
+            $previousFailure = (float) $previousEvaluation->failure_percentage;
 
-            /*
-            |--------------------------------------------------------------------------
-            | COMPARE FAILURE PERCENTAGES
-            |--------------------------------------------------------------------------
-            */
-
-            $currentFailure =
-                (float) $latestEvaluation->failure_percentage;
-
-            $previousFailure =
-                (float) $previousEvaluation->failure_percentage;
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | IMPROVEMENT = NO PRIORITY ALERT
-            |--------------------------------------------------------------------------
-            */
-
+            // An improved failure percentage means no Priority Alert.
             if ($currentFailure < $previousFailure) {
-
                 continue;
-
             }
 
+            // No improvement or worsening means Priority Alert.
+            $student->dashboard_status = $latestEvaluation->academic_status;
 
-            /*
-            |--------------------------------------------------------------------------
-            | NO IMPROVEMENT OR WORSE = PRIORITY ALERT
-            |--------------------------------------------------------------------------
-            */
+            if ($student->dashboard_status === 'For Shifting Out') {
+                $student->dashboard_status = 'Shifting Out';
+            }
 
-            $student->dashboard_status = $normalizeStatus(
-                $latestEvaluation->academic_status
-            );
+            if ($student->dashboard_status === 'Residency Risk') {
+                $student->dashboard_status = 'Below Treshold';
+            }
 
             $student->priority_alert = true;
 
             $priorityStudents->push($student);
-
         }
 
-
         $priorityAlerts = $priorityStudents->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ALL EVALUATIONS
+        |--------------------------------------------------------------------------
+        |
+        | This collection is used for:
+        |
+        | 1. Recently Evaluated Students
+        | 2. School Year Performance
+        |
+        */
+
+        $allEvaluations = StudentStatusHistory::with([
+            'student',
+            'semester'
+        ])
+        ->get();
 
 
         /*
@@ -347,7 +323,13 @@ class HomeController extends Controller
         | RECENTLY EVALUATED STUDENTS
         |--------------------------------------------------------------------------
         |
-        | Show the three most recent unique students.
+        | Show exactly 3 UNIQUE students.
+        |
+        | If a student has multiple evaluations, only the student's
+        | most recent evaluation is displayed.
+        |
+        | created_at is used first to determine the newest evaluation.
+        | status_id is used as a secondary tie-breaker.
         |
         */
 
@@ -422,8 +404,14 @@ class HomeController extends Controller
         | SCHOOL YEAR PERFORMANCE
         |--------------------------------------------------------------------------
         |
-        | Counts unique students flagged with Academic Warning,
-        | Probation, or Shifting Out during each school year.
+        | Counts UNIQUE students who were flagged with:
+        |
+        | - Academic Warning
+        | - Probation
+        | - Shifting Out
+        |
+        | A student is counted only once per school year even if
+        | the student has multiple flagged evaluations in that year.
         |
         */
 
@@ -442,7 +430,7 @@ class HomeController extends Controller
                     $history->semester &&
                     $history->student &&
                     in_array(
-                        trim((string) $history->academic_status),
+                        $history->academic_status,
                         $flaggedStatuses,
                         true
                     );
@@ -471,10 +459,15 @@ class HomeController extends Controller
         */
 
         $schoolYearLabels =
-            array_keys($schoolYearPerformance);
+            array_keys(
+                $schoolYearPerformance
+            );
+
 
         $schoolYearCounts =
-            array_values($schoolYearPerformance);
+            array_values(
+                $schoolYearPerformance
+            );
 
 
         /*
@@ -486,7 +479,9 @@ class HomeController extends Controller
         return view(
             'home',
             compact(
+
                 'students',
+
                 'totalStudents',
 
                 'regular',
@@ -509,6 +504,7 @@ class HomeController extends Controller
 
                 'schoolYearLabels',
                 'schoolYearCounts'
+
             )
         );
     }
