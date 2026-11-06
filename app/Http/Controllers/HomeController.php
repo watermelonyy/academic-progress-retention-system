@@ -16,8 +16,7 @@ class HomeController extends Controller
         */
 
         $students = Student::with([
-            'latestStatus.semester',
-            'statusHistory'
+            'statusHistory.semester'
         ])
         ->orderBy('last_name')
         ->orderBy('first_name')
@@ -37,34 +36,67 @@ class HomeController extends Controller
 
         $students = $students->map(function ($student) {
 
-            $status = optional(
-                $student->latestStatus
-            )->academic_status ?? 'Below Treshold';
+            // Determine the latest evaluation by the actual academic period.
+            // semester_id is not chronological in this database.
+            $evaluations = $student->statusHistory
+                ->sort(function ($a, $b) {
 
+                    $aSchoolYear = (string) optional($a->semester)->school_year;
+                    $bSchoolYear = (string) optional($b->semester)->school_year;
 
-            if ($status === 'For Shifting Out') {
+                    preg_match('/(\d{4})/', $aSchoolYear, $aMatches);
+                    preg_match('/(\d{4})/', $bSchoolYear, $bMatches);
 
-                $status = 'Shifting Out';
+                    $aYear = isset($aMatches[1]) ? (int) $aMatches[1] : 0;
+                    $bYear = isset($bMatches[1]) ? (int) $bMatches[1] : 0;
 
-            }
+                    if ($aYear !== $bYear) {
+                        return $bYear <=> $aYear;
+                    }
 
+                    $semesterOrder = [
+                        '1st Semester' => 1,
+                        '2nd Semester' => 2,
+                        'Summer' => 3,
+                    ];
 
-            /*
-            | Old records may contain Residency Risk as an academic status.
-            | Residency Risk is now a warning only, so keep the actual
-            | academic status as Below Treshold for dashboard purposes.
-            */
-            if ($status === 'Residency Risk') {
+                    $aSemester = $semesterOrder[optional($a->semester)->semester_name] ?? 0;
+                    $bSemester = $semesterOrder[optional($b->semester)->semester_name] ?? 0;
 
+                    if ($aSemester !== $bSemester) {
+                        return $bSemester <=> $aSemester;
+                    }
+
+                    $aTimestamp = optional($a->created_at)->timestamp ?? 0;
+                    $bTimestamp = optional($b->created_at)->timestamp ?? 0;
+
+                    if ($aTimestamp !== $bTimestamp) {
+                        return $bTimestamp <=> $aTimestamp;
+                    }
+
+                    return (int) $b->status_id <=> (int) $a->status_id;
+                })
+                ->values();
+
+            $latestEvaluation = $evaluations->first();
+
+            $student->latest_dashboard_evaluation = $latestEvaluation;
+
+            $status = $latestEvaluation->academic_status ?? 'Below Treshold';
+            $status = trim((string) $status);
+
+            // Normalize legacy and alternate database values to the dashboard labels.
+            if (in_array($status, ['Regular', 'Below Threshold', 'Residency Risk'], true)) {
                 $status = 'Below Treshold';
-
+            } elseif ($status === 'For Shifting Out') {
+                $status = 'Shifting Out';
+            } elseif ($status === '') {
+                $status = 'Below Treshold';
             }
-
 
             $student->dashboard_status = $status;
 
             return $student;
-
         });
 
 
@@ -212,46 +244,34 @@ class HomeController extends Controller
         foreach ($students as $student) {
 
             $evaluations = $student->statusHistory
-                ->loadMissing('semester')
                 ->sort(function ($a, $b) {
 
-                    // Compare the starting year of each school year.
-                    $aYear = (int) substr(
-                        (string) optional($a->semester)->school_year,
-                        0,
-                        4
-                    );
+                    $aSchoolYear = (string) optional($a->semester)->school_year;
+                    $bSchoolYear = (string) optional($b->semester)->school_year;
 
-                    $bYear = (int) substr(
-                        (string) optional($b->semester)->school_year,
-                        0,
-                        4
-                    );
+                    preg_match('/(\d{4})/', $aSchoolYear, $aMatches);
+                    preg_match('/(\d{4})/', $bSchoolYear, $bMatches);
+
+                    $aYear = isset($aMatches[1]) ? (int) $aMatches[1] : 0;
+                    $bYear = isset($bMatches[1]) ? (int) $bMatches[1] : 0;
 
                     if ($aYear !== $bYear) {
                         return $bYear <=> $aYear;
                     }
 
-                    // Within the same school year, 2nd Semester is newer.
                     $semesterOrder = [
                         '1st Semester' => 1,
                         '2nd Semester' => 2,
+                        'Summer' => 3,
                     ];
 
-                    $aSemester = $semesterOrder[
-                        optional($a->semester)->semester_name
-                    ] ?? 0;
-
-                    $bSemester = $semesterOrder[
-                        optional($b->semester)->semester_name
-                    ] ?? 0;
+                    $aSemester = $semesterOrder[optional($a->semester)->semester_name] ?? 0;
+                    $bSemester = $semesterOrder[optional($b->semester)->semester_name] ?? 0;
 
                     if ($aSemester !== $bSemester) {
                         return $bSemester <=> $aSemester;
                     }
 
-                    // If both evaluations are from the same semester,
-                    // the newest timestamp/status ID comes first.
                     $aTimestamp = optional($a->created_at)->timestamp ?? 0;
                     $bTimestamp = optional($b->created_at)->timestamp ?? 0;
 
@@ -260,7 +280,6 @@ class HomeController extends Controller
                     }
 
                     return (int) $b->status_id <=> (int) $a->status_id;
-
                 })
                 ->values();
 
