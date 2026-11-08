@@ -1722,18 +1722,6 @@ public function residencyPrediction(int $id)
  
             /* 
             |-------------------------------------------------------------------------- 
-            | FAILED SUBJECTS ARE OPTIONAL 
-            |-------------------------------------------------------------------------- 
-            | 
-            | The admin enters only the failed subjects for this semester. 
-            | A student may have zero failed subjects, in which case the 
-            | evaluation is still recorded as 0% failure and Below Threshold. 
-            | 
-            */ 
- 
- 
-            /* 
-            |-------------------------------------------------------------------------- 
             | SAVE SUBJECTS 
             |-------------------------------------------------------------------------- 
             */ 
@@ -2024,11 +2012,6 @@ public function residencyPrediction(int $id)
         int $totalSubjects 
     ) { 
  
-        /* 
-        |-------------------------------------------------------------------------- 
-        | GET SEMESTER 
-        |-------------------------------------------------------------------------- 
-        */ 
  
         $semester = Semester::find( 
             $semester_id 
@@ -2038,13 +2021,7 @@ public function residencyPrediction(int $id)
         if (!$semester) { 
             return; 
         } 
- 
- 
-        /* 
-        |-------------------------------------------------------------------------- 
-        | GET CURRENT SEMESTER GRADES ONLY 
-        |-------------------------------------------------------------------------- 
-        */ 
+
  
         $currentGrades = AcademicGrade::where( 
             'student_id', 
