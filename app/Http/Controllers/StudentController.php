@@ -3581,10 +3581,37 @@ public function residencyPrediction(int $id)
                         $prerequisiteCode
                     ) {
 
+                        /*
+                        |----------------------------------------------------------
+                        | RESOLVE PREREQUISITE COURSE CODES
+                        |----------------------------------------------------------
+                        | First use an exact course-code match. If the prospectus
+                        | stores a shortened prerequisite such as DATASTRUC while
+                        | the actual course code is DATASTRUC 1, allow the match
+                        | only when exactly one prospectus course has that prefix.
+                        | This avoids incorrectly matching ambiguous codes such as
+                        | NET to both NET 1 and NET 2.
+                        |----------------------------------------------------------
+                        */
                         $prerequisite =
-                            $subjectByCode[
-                                $prerequisiteCode
-                            ] ?? null;
+                            $subjectByCode[$prerequisiteCode] ?? null;
+
+                        if (!$prerequisite) {
+                            $prefixMatches = [];
+
+                            foreach ($subjectByCode as $candidateCode => $candidateSubject) {
+                                if (strpos(
+                                    $candidateCode,
+                                    $prerequisiteCode . ' '
+                                ) === 0) {
+                                    $prefixMatches[] = $candidateSubject;
+                                }
+                            }
+
+                            if (count($prefixMatches) === 1) {
+                                $prerequisite = $prefixMatches[0];
+                            }
+                        }
 
                         if (!$prerequisite) {
 
