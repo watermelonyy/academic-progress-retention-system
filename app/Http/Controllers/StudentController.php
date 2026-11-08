@@ -2817,7 +2817,6 @@ public function residencyPrediction(int $id)
 
         $subjectById = [];
         $subjectByCode = [];
-        $subjectsByNormalizedCode = [];
 
         foreach ($prospectusSubjects as $subject) {
 
@@ -2829,46 +2828,10 @@ public function residencyPrediction(int $id)
             );
 
             if ($code !== '') {
-                $subjectByCode[$code] = $subject;
-                $subjectsByNormalizedCode[$code] = $subject;
+                $subjectByCode[$code] =
+                    $subject;
             }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESOLVE PREREQUISITE COURSE CODES
-        |--------------------------------------------------------------------------
-        | Some prospectus entries use a shortened prerequisite code. For
-        | example, IM 1 lists DATASTRUC while the actual subject is
-        | DATASTRUC 1. Accept a shortened code only when it identifies
-        | exactly one prospectus subject. Never guess when it is ambiguous.
-        |--------------------------------------------------------------------------
-        */
-
-        $resolvePrerequisiteSubject = function ($code) use (
-            $subjectByCode,
-            $subjectsByNormalizedCode
-        ) {
-            $normalizedCode = $this->normalizeCourseCode($code);
-
-            if ($normalizedCode === '') {
-                return null;
-            }
-
-            if (isset($subjectByCode[$normalizedCode])) {
-                return $subjectByCode[$normalizedCode];
-            }
-
-            $matches = [];
-
-            foreach ($subjectsByNormalizedCode as $candidateCode => $candidateSubject) {
-                if (str_starts_with($candidateCode, $normalizedCode . ' ')) {
-                    $matches[] = $candidateSubject;
-                }
-            }
-
-            return count($matches) === 1 ? $matches[0] : null;
-        };
 
         /*
         |--------------------------------------------------------------------------
@@ -3483,24 +3446,32 @@ public function residencyPrediction(int $id)
             | NO GRADE RECORD
             |--------------------------------------------------------------------------
             |
-            | The system stores failed subjects only; passed subjects are not
-            | encoded. Therefore, no grade record is treated as completed in
-            | its normal prospectus slot UNLESS a delayed prerequisite proves
-            | that the subject could not have been completed on that schedule.
+            | The system encodes FAILED SUBJECTS only. Therefore, a subject with
+            | no AcademicGrade record is NOT treated as an uncompleted subject.
+            | It is assumed to have been completed in its normal Prospectus slot.
             |
-            | Keep this slot movable. The prerequisite pass below will leave
-            | independent subjects in their normal slots, while moving dependent
-            | subjects to their next same-semester offering when a prerequisite
-            | is delayed. Marking every past unrecorded subject as fixed causes
-            | prerequisite chains to stop and underestimates residency.
+            | This prevents subjects that were not encoded because they were
+            | passed from being incorrectly projected into later school years.
+            |
             |--------------------------------------------------------------------------
             */
 
+            
+        $isCurrentOrFutureSubject =
+                $normalSlot['index'] >= $evaluationSlot['index'];
+
             $completionSlots[$subjectId] = [
-                'year' => $normalSlot['year'],
-                'semester' => $normalSlot['semester'],
-                'index' => $normalSlot['index'],
-                'fixed' => false,
+                'year' =>
+                    $normalSlot['year'],
+
+                'semester' =>
+                    $normalSlot['semester'],
+
+                'index' =>
+                    $normalSlot['index'],
+
+                'fixed' =>
+                    !$isCurrentOrFutureSubject,
             ];
 
         }
@@ -3611,9 +3582,9 @@ public function residencyPrediction(int $id)
                     ) {
 
                         $prerequisite =
-                            $resolvePrerequisiteSubject(
+                            $subjectByCode[
                                 $prerequisiteCode
-                            );
+                            ] ?? null;
 
                         if (!$prerequisite) {
 
@@ -3784,6 +3755,138 @@ public function residencyPrediction(int $id)
 
             if (!$changed) {
                 break;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRACTICUM MUST BE TAKEN ALONE AFTER ALL OTHER SUBJECTS
+        |--------------------------------------------------------------------------
+        |
+        | PRAC is not allowed to overlap with any remaining curriculum subject.
+        | Every non-Practicum subject must have a projected completion slot
+        | strictly earlier than the Practicum slot. Practicum is offered only
+        | in the 2nd Semester, so if another subject is completed during the
+        | normal Practicum semester (or later), move PRAC to the next available
+        | 2nd Semester after the final non-Practicum subject.
+        |
+        | An already-passed Practicum keeps its actual historical completion.
+        | An unresolved/never-taken Practicum is scheduled after all other
+        | subjects and remains a standalone semester.
+        |--------------------------------------------------------------------------
+        */
+
+        $practicumSubject = null;
+        $latestNonPracticumIndex = null;
+
+        foreach ($prospectusSubjects as $subject) {
+
+            $subjectCode = $this->normalizeCourseCode(
+                $subject->subject_code
+            );
+
+            $subjectTitle = strtolower(
+                trim((string) $subject->subject_title)
+            );
+
+            $isPracticum =
+                $subjectCode === 'PRAC' ||
+                str_contains($subjectTitle, 'practicum');
+
+            if ($isPracticum) {
+                $practicumSubject = $subject;
+                continue;
+            }
+
+            $subjectId = (int) $subject->subject_id;
+            $slot = $completionSlots[$subjectId] ?? null;
+
+            if (
+                $slot !== null &&
+                isset($slot['index']) &&
+                $slot['index'] !== null
+            ) {
+                $latestNonPracticumIndex = $latestNonPracticumIndex === null
+                    ? (int) $slot['index']
+                    : max(
+                        $latestNonPracticumIndex,
+                        (int) $slot['index']
+                    );
+            }
+        }
+
+        if ($practicumSubject !== null) {
+
+            $practicumId = (int) $practicumSubject->subject_id;
+            $practicumSlot = $completionSlots[$practicumId] ?? null;
+            $practicumAlreadyPassed = isset($passedSubjects[$practicumId]);
+
+            // Preserve an actual passing record; do not rewrite academic history.
+            if (!$practicumAlreadyPassed) {
+
+                $normalPracticumSlot = $subjectNormalSlot(
+                    $practicumSubject
+                );
+
+                $currentPracticumIndex =
+                    $practicumSlot['index'] ??
+                    ($normalPracticumSlot['index'] ?? null);
+
+                if ($currentPracticumIndex !== null) {
+
+                    // The normal PRAC semester is the 2nd semester.
+                    $targetIndex = (int) $currentPracticumIndex;
+
+                    if ($latestNonPracticumIndex !== null) {
+
+                        // Find the first 2nd-semester slot strictly after
+                        // the final non-Practicum subject completion.
+                        $lastOtherYear = intdiv(
+                            (int) $latestNonPracticumIndex,
+                            2
+                        );
+
+                        $lastOtherSemester = (
+                            (int) $latestNonPracticumIndex % 2
+                        ) + 1;
+
+                        $firstStandalonePracticumIndex =
+                            ($lastOtherSemester === 1)
+                                ? (($lastOtherYear * 2) + 1)
+                                : ((($lastOtherYear + 1) * 2) + 1);
+
+                        $targetIndex = max(
+                            $targetIndex,
+                            $firstStandalonePracticumIndex
+                        );
+                    }
+
+                    // PRAC is only offered in the 2nd semester. If its
+                    // current target is a 1st-semester slot, move it to
+                    // the 2nd semester of that school year.
+                    $targetYear = intdiv($targetIndex, 2);
+                    $targetSemester = ($targetIndex % 2) + 1;
+
+                    if ($targetSemester === 1) {
+                        $targetIndex = ($targetYear * 2) + 1;
+                    }
+
+                    // Final safety check: no other subject may share PRAC's slot.
+                    if (
+                        $latestNonPracticumIndex !== null &&
+                        $targetIndex <= $latestNonPracticumIndex
+                    ) {
+                        $targetYear++;
+                        $targetIndex = ($targetYear * 2) + 1;
+                    }
+
+                    $completionSlots[$practicumId] = [
+                        'year' => intdiv($targetIndex, 2),
+                        'semester' => 2,
+                        'index' => $targetIndex,
+                        'fixed' => false,
+                    ];
+                }
             }
         }
 
