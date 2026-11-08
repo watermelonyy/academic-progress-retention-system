@@ -476,7 +476,7 @@
 
                     <div class="mt-2">
                         The student has already exceeded six school years
-                        based on the latest evaluated school year..
+                        based on the latest evaluated school year.
                     </div>
 
                 @else
