@@ -908,25 +908,19 @@
                 @endif
 
                 <!-- COMPARATIVE ANALYSIS -->
-                @php
+@php
                     /*
                     |--------------------------------------------------------------------------
                     | BUILD CHRONOLOGICAL COMPARISON
                     |--------------------------------------------------------------------------
+                    | StudentController supplies one latest evaluation per semester,
+                    | already sorted from the oldest semester to the newest semester.
+                    | Use that exact order for the graph; do not sort again by ID.
                     */
 
                     $comparisonHistory = $evaluations
                         ->filter(function ($evaluation) {
                             return $evaluation->semester !== null;
-                        })
-                        ->groupBy('semester_id')
-                        ->map(function ($semesterEvaluations) {
-                            return $semesterEvaluations
-                                ->sortByDesc('status_id')
-                                ->first();
-                        })
-                        ->sortBy(function ($evaluation) {
-                            return (int) $evaluation->semester_id;
                         })
                         ->values();
 
@@ -1019,52 +1013,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-lg-4 col-md-12">
-
-                                    @if($overallComparisonDifference < 0)
-
-                                        <div class="trend-card trend-improved">
-                                            <strong>
-                                                <i class="fa fa-arrow-down me-2"></i>
-                                                Overall Improvement
-                                            </strong>
-
-                                            <p>
-                                                Failure decreased by
-                                                {{ number_format(abs($overallComparisonDifference), 2) }}
-                                                percentage points.
-                                            </p>
-                                        </div>
-
-                                    @elseif($overallComparisonDifference > 0)
-
-                                        <div class="trend-card trend-worsened">
-                                            <strong>
-                                                <i class="fa fa-arrow-up me-2"></i>
-                                                Overall Worsening
-                                            </strong>
-
-                                            <p>
-                                                Failure increased by
-                                                {{ number_format($overallComparisonDifference, 2) }}
-                                                percentage points.
-                                            </p>
-                                        </div>
-
-                                    @else
-
-                                        <div class="trend-card trend-neutral">
-                                            <strong>
-                                                <i class="fa fa-minus me-2"></i>
-                                                No Overall Change
-                                            </strong>
-
-                                            <p>
-                                                Failure percentage remained the same.
-                                            </p>
-                                        </div>
-
-                                    @endif
+                                
 
                                 </div>
 

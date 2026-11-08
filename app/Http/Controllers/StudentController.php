@@ -1056,49 +1056,70 @@ public function residencyPrediction(int $id)
     | EDIT 
     |-------------------------------------------------------------------------- 
     */ 
-    public function edit(string $id) 
-    { 
-        if (!session()->has('user_id')) { 
-            return redirect('/') 
-                ->with('error', 'Please login first.'); 
-        } 
- 
- 
-        $student = Student::with([ 
-            'academicGrades.subject', 
-            'academicGrades.semester' 
-        ])->findOrFail($id); 
- 
- 
-        $semesters = Semester::orderBy( 
-            'semester_id', 
-            'desc' 
-        )->get(); 
- 
- 
-        /* 
-        | Get latest semester in which grades were recorded 
-        */ 
- 
-        $currentSemesterId = AcademicGrade::where( 
-            'student_id', 
-            $student->student_id 
-        ) 
-            ->orderByDesc('semester_id') 
-            ->value('semester_id'); 
- 
- 
-        return view( 
-            'students.edit', 
-            compact( 
-                'student', 
-                'semesters', 
-                'currentSemesterId' 
-            ) 
-        ); 
-    } 
- 
- 
+    public function edit(string $id)
+    {
+        if (!session()->has('user_id')) {
+            return redirect('/')
+                ->with('error', 'Please login first.');
+        }
+
+        $student = Student::with([
+            'academicGrades.subject',
+            'academicGrades.semester',
+            'statusHistory'
+        ])->findOrFail($id);
+
+        $semesters = Semester::orderBy(
+            'semester_id',
+            'desc'
+        )->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | SELECT THE MOST RECENTLY EVALUATED SEMESTER
+        |--------------------------------------------------------------------------
+        | An evaluation with zero failed subjects has a status-history record
+        | but no AcademicGrade records. Therefore, use evaluation history
+        | instead of selecting the semester from grades alone.
+        |--------------------------------------------------------------------------
+        */
+
+        $latestEvaluation = $this->getLatestAcademicEvaluation($student);
+
+        $currentSemesterId = $latestEvaluation
+            ? (int) $latestEvaluation->semester_id
+            : null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | FALLBACK WHEN NO EVALUATION HISTORY EXISTS
+        |--------------------------------------------------------------------------
+        | If grade records exist without a status-history record, use the
+        | latest actual school-year/semester chronology, not semester_id.
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$currentSemesterId) {
+            $latestGrade = $student->academicGrades
+                ->sortByDesc(function ($grade) {
+                    return $this->getSemesterSlot($grade->semester)['index'] ?? -1;
+                })
+                ->first();
+
+            $currentSemesterId = $latestGrade
+                ? (int) $latestGrade->semester_id
+                : null;
+        }
+
+        return view(
+            'students.edit',
+            compact(
+                'student',
+                'semesters',
+                'currentSemesterId'
+            )
+        );
+    }
     /* 
     |-------------------------------------------------------------------------- 
     | UPDATE STUDENT 
@@ -3458,6 +3479,10 @@ public function residencyPrediction(int $id)
             |--------------------------------------------------------------------------
             */
 
+            
+        $isCurrentOrFutureSubject =
+                $normalSlot['index'] >= $evaluationSlot['index'];
+
             $completionSlots[$subjectId] = [
                 'year' =>
                     $normalSlot['year'],
@@ -3469,10 +3494,10 @@ public function residencyPrediction(int $id)
                     $normalSlot['index'],
 
                 'fixed' =>
-                    true,
+                    !$isCurrentOrFutureSubject,
             ];
-        }
 
+        }
         /*
         |--------------------------------------------------------------------------
         | ITERATIVELY APPLY PREREQUISITE DELAYS
@@ -4051,7 +4076,6 @@ public function residencyPrediction(int $id)
             4,
             $normalProgramYears,
             $projectedYears,
-            $normalProgramYears + $maxDelay,
             $elapsedSchoolYears
         );
 
@@ -4560,29 +4584,34 @@ public function residencyPrediction(int $id)
  
 public function priorityAlert(int $id)
 {
+    if (!session()->has('user_id')) {
+        return redirect('/')
+            ->with('error', 'Please login first.');
+    }
+
     $student = Student::with([
         'statusHistory.semester'
     ])->findOrFail($id);
 
     /*
     |--------------------------------------------------------------------------
-    | GET COMPLETE EVALUATION HISTORY
+    | GET COMPLETE EVALUATION HISTORY IN CHRONOLOGICAL ORDER
     |--------------------------------------------------------------------------
-    | Group by semester and use the most recently saved status record
-    | for each semester. Order by actual evaluation timestamp.
+    | Keep only the latest saved evaluation for each semester. Then sort
+    | by the actual school year and semester, oldest to newest.
+    | This same collection is used by the comparison cards and graph.
     |--------------------------------------------------------------------------
     */
 
     $evaluations = $student->statusHistory
         ->filter(function ($history) {
-            return $history->semester_id !== null;
+            return $history->semester_id !== null
+                && $history->semester !== null;
         })
         ->groupBy('semester_id')
         ->map(function ($semesterEvaluations) {
-
             return $semesterEvaluations
                 ->sort(function ($a, $b) {
-
                     $dateComparison = strcmp(
                         (string) $b->created_at,
                         (string) $a->created_at
@@ -4596,33 +4625,91 @@ public function priorityAlert(int $id)
                         <=> (int) $a->status_id;
                 })
                 ->first();
-
         })
         ->sort(function ($a, $b) {
+            $getSchoolYear = function ($evaluation) {
+                $schoolYear = trim((string) optional(
+                    $evaluation->semester
+                )->school_year);
 
-            $dateComparison = strcmp(
-                (string) $b->created_at,
-                (string) $a->created_at
-            );
+                // Supports formats such as 2023-2024, 2023/2024, and 2023.
+                if (preg_match('/((?:19|20)\d{2})/', $schoolYear, $matches)) {
+                    return (int) $matches[1];
+                }
 
-            if ($dateComparison !== 0) {
-                return $dateComparison;
+                return null;
+            };
+
+            $getSemesterOrder = function ($evaluation) {
+                $semesterName = strtolower(trim((string) optional(
+                    $evaluation->semester
+                )->semester_name));
+
+                if (
+                    str_contains($semesterName, 'summer') ||
+                    str_contains($semesterName, 'midyear') ||
+                    str_contains($semesterName, 'mid-year')
+                ) {
+                    return 3;
+                }
+
+                if (
+                    str_contains($semesterName, 'second') ||
+                    str_contains($semesterName, '2nd') ||
+                    preg_match('/(^|\D)2(\D|$)/', $semesterName)
+                ) {
+                    return 2;
+                }
+
+                if (
+                    str_contains($semesterName, 'first') ||
+                    str_contains($semesterName, '1st') ||
+                    preg_match('/(^|\D)1(\D|$)/', $semesterName)
+                ) {
+                    return 1;
+                }
+
+                return 0;
+            };
+
+            $yearA = $getSchoolYear($a);
+            $yearB = $getSchoolYear($b);
+
+            // When both school-year labels are recognizable, compare them.
+            if ($yearA !== null && $yearB !== null && $yearA !== $yearB) {
+                return $yearA <=> $yearB;
             }
 
-            return (int) $b->status_id
-                <=> (int) $a->status_id;
+            // If school-year labels cannot be parsed, use semester_id as fallback.
+            if ($yearA === null || $yearB === null) {
+                return (int) $a->semester_id <=> (int) $b->semester_id;
+            }
+
+            $semesterComparison =
+                $getSemesterOrder($a) <=> $getSemesterOrder($b);
+
+            if ($semesterComparison !== 0) {
+                return $semesterComparison;
+            }
+
+            return (int) $a->semester_id <=> (int) $b->semester_id;
         })
         ->values();
 
     /*
     |--------------------------------------------------------------------------
-    | RECENT AND PREVIOUS EVALUATION
+    | PREVIOUS AND RECENT EVALUATIONS
+    |--------------------------------------------------------------------------
+    | The collection is oldest to newest, so the last item is recent and
+    | the item immediately before it is the previous evaluation.
     |--------------------------------------------------------------------------
     */
 
-    $recentEvaluation = $evaluations->first();
+    $recentEvaluation = $evaluations->last();
 
-    $previousEvaluation = $evaluations->skip(1)->first();
+    $previousEvaluation = $evaluations->count() >= 2
+        ? $evaluations->get($evaluations->count() - 2)
+        : null;
 
     /*
     |--------------------------------------------------------------------------
@@ -4633,12 +4720,8 @@ public function priorityAlert(int $id)
     $priorityAlert = false;
 
     if ($recentEvaluation && $previousEvaluation) {
-
-        $recentFailure =
-            (float) $recentEvaluation->failure_percentage;
-
-        $previousFailure =
-            (float) $previousEvaluation->failure_percentage;
+        $recentFailure = (float) $recentEvaluation->failure_percentage;
+        $previousFailure = (float) $previousEvaluation->failure_percentage;
 
         if ($recentFailure >= $previousFailure) {
             $priorityAlert = true;
