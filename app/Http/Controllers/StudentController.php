@@ -2817,6 +2817,7 @@ public function residencyPrediction(int $id)
 
         $subjectById = [];
         $subjectByCode = [];
+        $subjectsByNormalizedCode = [];
 
         foreach ($prospectusSubjects as $subject) {
 
@@ -2828,10 +2829,46 @@ public function residencyPrediction(int $id)
             );
 
             if ($code !== '') {
-                $subjectByCode[$code] =
-                    $subject;
+                $subjectByCode[$code] = $subject;
+                $subjectsByNormalizedCode[$code] = $subject;
             }
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESOLVE PREREQUISITE COURSE CODES
+        |--------------------------------------------------------------------------
+        | Some prospectus entries use a shortened prerequisite code. For
+        | example, IM 1 lists DATASTRUC while the actual subject is
+        | DATASTRUC 1. Accept a shortened code only when it identifies
+        | exactly one prospectus subject. Never guess when it is ambiguous.
+        |--------------------------------------------------------------------------
+        */
+
+        $resolvePrerequisiteSubject = function ($code) use (
+            $subjectByCode,
+            $subjectsByNormalizedCode
+        ) {
+            $normalizedCode = $this->normalizeCourseCode($code);
+
+            if ($normalizedCode === '') {
+                return null;
+            }
+
+            if (isset($subjectByCode[$normalizedCode])) {
+                return $subjectByCode[$normalizedCode];
+            }
+
+            $matches = [];
+
+            foreach ($subjectsByNormalizedCode as $candidateCode => $candidateSubject) {
+                if (str_starts_with($candidateCode, $normalizedCode . ' ')) {
+                    $matches[] = $candidateSubject;
+                }
+            }
+
+            return count($matches) === 1 ? $matches[0] : null;
+        };
 
         /*
         |--------------------------------------------------------------------------
@@ -3446,32 +3483,24 @@ public function residencyPrediction(int $id)
             | NO GRADE RECORD
             |--------------------------------------------------------------------------
             |
-            | The system encodes FAILED SUBJECTS only. Therefore, a subject with
-            | no AcademicGrade record is NOT treated as an uncompleted subject.
-            | It is assumed to have been completed in its normal Prospectus slot.
+            | The system stores failed subjects only; passed subjects are not
+            | encoded. Therefore, no grade record is treated as completed in
+            | its normal prospectus slot UNLESS a delayed prerequisite proves
+            | that the subject could not have been completed on that schedule.
             |
-            | This prevents subjects that were not encoded because they were
-            | passed from being incorrectly projected into later school years.
-            |
+            | Keep this slot movable. The prerequisite pass below will leave
+            | independent subjects in their normal slots, while moving dependent
+            | subjects to their next same-semester offering when a prerequisite
+            | is delayed. Marking every past unrecorded subject as fixed causes
+            | prerequisite chains to stop and underestimates residency.
             |--------------------------------------------------------------------------
             */
 
-            
-        $isCurrentOrFutureSubject =
-                $normalSlot['index'] >= $evaluationSlot['index'];
-
             $completionSlots[$subjectId] = [
-                'year' =>
-                    $normalSlot['year'],
-
-                'semester' =>
-                    $normalSlot['semester'],
-
-                'index' =>
-                    $normalSlot['index'],
-
-                'fixed' =>
-                    !$isCurrentOrFutureSubject,
+                'year' => $normalSlot['year'],
+                'semester' => $normalSlot['semester'],
+                'index' => $normalSlot['index'],
+                'fixed' => false,
             ];
 
         }
@@ -3581,37 +3610,10 @@ public function residencyPrediction(int $id)
                         $prerequisiteCode
                     ) {
 
-                        /*
-                        |----------------------------------------------------------
-                        | RESOLVE PREREQUISITE COURSE CODES
-                        |----------------------------------------------------------
-                        | First use an exact course-code match. If the prospectus
-                        | stores a shortened prerequisite such as DATASTRUC while
-                        | the actual course code is DATASTRUC 1, allow the match
-                        | only when exactly one prospectus course has that prefix.
-                        | This avoids incorrectly matching ambiguous codes such as
-                        | NET to both NET 1 and NET 2.
-                        |----------------------------------------------------------
-                        */
                         $prerequisite =
-                            $subjectByCode[$prerequisiteCode] ?? null;
-
-                        if (!$prerequisite) {
-                            $prefixMatches = [];
-
-                            foreach ($subjectByCode as $candidateCode => $candidateSubject) {
-                                if (strpos(
-                                    $candidateCode,
-                                    $prerequisiteCode . ' '
-                                ) === 0) {
-                                    $prefixMatches[] = $candidateSubject;
-                                }
-                            }
-
-                            if (count($prefixMatches) === 1) {
-                                $prerequisite = $prefixMatches[0];
-                            }
-                        }
+                            $resolvePrerequisiteSubject(
+                                $prerequisiteCode
+                            );
 
                         if (!$prerequisite) {
 

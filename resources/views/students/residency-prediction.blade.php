@@ -507,10 +507,35 @@
 
         @endif
 
+        @if(!empty($residencyDelayedSubjects))
+            <div class="mt-4">
+                <strong class="d-block mb-2">Subjects Affected by Delays</strong>
+                <div class="residency-subject-list">
+                    @foreach($residencyDelayedSubjects as $subjectCode)
+                        <span class="residency-subject">{{ $subjectCode }}</span>
+                    @endforeach
+                </div>
+                <p class="residency-note">
+                    These subjects are scheduled later because of unresolved
+                    failed subjects or prerequisite dependencies. Subjects
+                    without recorded failed grades are assumed passed unless
+                    a delayed prerequisite affects their schedule.
+                </p>
+            </div>
+        @endif
+
+        @if(!empty($residencyReasons))
+            <div class="mt-3">
+                <strong class="d-block mb-2">Prediction Details</strong>
+                <ul class="residency-reason-list">
+                    @foreach($residencyReasons as $reason)
+                        <li>{{ $reason }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
     </div>
-
-
-    
 
 </div>
 
